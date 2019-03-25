@@ -39,7 +39,10 @@ const initNodes: GraphNode[] = [
   { id: 4 },
   { id: 5 },
   { id: 6 },
-  { id: 7 }
+  { id: 7 },
+  { id: 8 },
+  { id: 9 },
+  { id: 10 }
 ];
 
 const initLinks: Link[] = [
@@ -74,10 +77,12 @@ export default class Graph extends React.Component<{}, TState> {
       .attr("transform", `translate(${padding},${padding})`);
     let width = parseFloat(svg.style("width")),
       height = parseFloat(svg.style("height"));
+
+    let self = this;
     let force = d3
       .forceSimulation(initNodes)
-      .force("charge", d3.forceManyBody().strength(-5))
       .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("charge", d3.forceManyBody().strength(-5))
       .force(
         "link",
         d3
@@ -85,43 +90,41 @@ export default class Graph extends React.Component<{}, TState> {
           .id(d => d.id.toString())
           .distance(50)
       )
-      .force("collide", d3.forceCollide(20));
+      .force("collide", d3.forceCollide(20))
+      .alphaTarget(0.1)
+      .on("tick", () => {
+        if (!self.d3state) return console.error("> d3state is not defined!");
+        let { linkSelection, nodeSelection } = self.d3state;
+        linkSelection
+          .attr("x1", d => {
+            let currentNode = d.source as GraphNode;
+            return currentNode.x ? currentNode.x : null;
+          })
+          .attr("y1", d => {
+            let currentNode = d.source as GraphNode;
+            return currentNode.y ? currentNode.y : null;
+          })
+          .attr("x2", d => {
+            let destNode = d.target as GraphNode;
+            return destNode.x ? destNode.x : null;
+          })
+          .attr("y2", d => {
+            let destNode = d.target as GraphNode;
+            return destNode.y ? destNode.y : null;
+          });
 
-    let self = this;
+        nodeSelection
+          .select("circle")
+          .attr("cx", d => {
+            return d.x ? d.x : null;
+          })
+          .attr("cy", d => (d.y ? d.y : null));
 
-    force.on("tick", () => {
-      if (!self.d3state) return console.error("> d3state is not defined!");
-      let { linkSelection, nodeSelection } = self.d3state;
-      linkSelection
-        .attr("x1", d => {
-          let currentNode = d.source as GraphNode;
-          return currentNode.x ? currentNode.x : null;
-        })
-        .attr("y1", d => {
-          let currentNode = d.source as GraphNode;
-          return currentNode.y ? currentNode.y : null;
-        })
-        .attr("x2", d => {
-          let destNode = d.target as GraphNode;
-          return destNode.x ? destNode.x : null;
-        })
-        .attr("y2", d => {
-          let destNode = d.target as GraphNode;
-          return destNode.y ? destNode.y : null;
-        });
-
-      nodeSelection
-        .select("circle")
-        .attr("cx", d => {
-          return d.x ? d.x : null;
-        })
-        .attr("cy", d => (d.y ? d.y : null));
-
-      nodeSelection
-        .select("text")
-        .attr("x", d => (d.x ? d.x : null))
-        .attr("y", d => (d.y ? d.y + 2 : null));
-    });
+        nodeSelection
+          .select("text")
+          .attr("x", d => (d.x ? d.x : null))
+          .attr("y", d => (d.y ? d.y + 2 : null));
+      });
 
     let link = graph
       .append("g")
@@ -154,6 +157,18 @@ export default class Graph extends React.Component<{}, TState> {
     if (!linkSelection) return console.error("> linkSelection is not defined!");
     if (!nodeSelection) return console.error("> linkSelection is not defined!");
     if (!force) return console.error("> force is not defined!");
+    force.nodes(nodes);
+    force.force("center", d3.forceCenter(width / 2, height / 2));
+    force.force("charge", d3.forceManyBody().strength(0));
+    force.force(
+      "link",
+      d3
+        .forceLink<GraphNode, Link>(links)
+        .distance(50)
+        .id(d => d.id.toString())
+    );
+    force.force("collide", d3.forceCollide(20));
+    force.alpha(0.5).restart();
 
     linkSelection = linkSelection.data(links);
     linkSelection.exit().remove();
@@ -186,8 +201,8 @@ export default class Graph extends React.Component<{}, TState> {
         .attr("fill", "#282c34")
         .attr("stroke", "#fff")
         .attr("stroke-width", "2")
-        .attr("cx", width / 2)
-        .attr("cy", height / 2)
+        .attr("cx", d => (d.x ? d.x : null))
+        .attr("cy", d => (d.y ? d.y : null))
         .call(this.drag(force) as any);
     }
     let labels = nodeSelection.select<SVGTextElement>("text");
@@ -197,29 +212,16 @@ export default class Graph extends React.Component<{}, TState> {
         .append("text")
         .text(d => (d.label ? d.label : d.id))
         .attr("alignment-baseline", "middle")
-        .attr("x", width / 2)
-        .attr("y", height / 2)
+        .attr("x", d => (d.x ? d.x : null))
+        .attr("y", d => (d.y ? d.y : null))
         .call(this.drag(force) as any);
     }
-    force = force
-      .nodes(nodes)
-      .force("charge", d3.forceManyBody().strength(0))
-      .force("center", d3.forceCenter(width / 2, height / 2))
-      .force(
-        "link",
-        d3
-          .forceLink<GraphNode, Link>(links)
-          .distance(50)
-          .id(d => d.id.toString())
-      )
-      .force("collide", d3.forceCollide(20));
 
     this.d3state = {
       ...this.d3state,
       linkSelection,
       nodeSelection
     };
-    force.restart();
   };
 
   drag = (simulation: d3.Simulation<GraphNode, Link>) => {
@@ -247,10 +249,13 @@ export default class Graph extends React.Component<{}, TState> {
       .on("end", dragEnded);
   };
 
-  addNode = () => {
+  addNode = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     let { nodes } = this.state;
+    let rect = (event.target as HTMLDivElement).getBoundingClientRect();
     nodes.push({
-      id: nodes[nodes.length - 1].id + 1
+      id: nodes[nodes.length - 1].id + 1,
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
     });
     this.setState({
       ...this.state,
@@ -265,8 +270,8 @@ export default class Graph extends React.Component<{}, TState> {
       <div className="wrapper">
         <div
           id="graphContainer"
-          onClick={() => {
-            mode === "modify" ? this.addNode() : null;
+          onClick={event => {
+            mode === "modify" ? this.addNode(event) : null;
           }}
         />
         <div className="controls">
