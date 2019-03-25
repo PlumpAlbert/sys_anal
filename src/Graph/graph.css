@@ -10,6 +10,11 @@
   user-select: none;
 }
 
+.node {
+  text-anchor: middle;
+  fill: #61dafb;
+}
+
 .controls {
   display: flex;
   height: 50px;

@@ -16,15 +16,19 @@ type TState = {
   nodes: GraphNode[];
   /** Links between two nodes */
   links: Link[];
+  mode: "drag" | "modify";
+};
+
+type D3State = {
   /** Root svg element */
-  svg?: d3.Selection<SVGSVGElement, {}, HTMLElement, {}>;
-  /** Root group for drawing graph nodes and links */
-  graph?: d3.Selection<SVGGElement, {}, HTMLElement, {}>;
+  svg: d3.Selection<SVGSVGElement, {}, HTMLElement, {}>;
+  linkSelection: d3.Selection<SVGLineElement, Link, SVGGElement, {}>;
+  nodeSelection: d3.Selection<SVGGElement, GraphNode, SVGGElement, {}>;
+  force: d3.Simulation<GraphNode, Link>;
   /** Width of the container */
   width: number;
   /** Height of the container */
   height: number;
-  mode: "drag" | "modify";
 };
 
 const initNodes: GraphNode[] = [
@@ -51,12 +55,11 @@ const initLinks: Link[] = [
 const initState: TState = {
   nodes: initNodes,
   links: initLinks,
-  width: 0,
-  height: 0,
   mode: "modify"
 };
 
 export default class Graph extends React.Component<{}, TState> {
+  d3state: D3State | null = null;
   state = initState;
 
   componentDidMount = () => {
@@ -71,85 +74,25 @@ export default class Graph extends React.Component<{}, TState> {
       .attr("transform", `translate(${padding},${padding})`);
     let width = parseFloat(svg.style("width")),
       height = parseFloat(svg.style("height"));
-
-    let newState = {
-      svg,
-      graph,
-      width,
-      height
-    };
-    this.setState(newState);
-  };
-
-  updateGraph = () => {
-    let { graph, nodes, links, mode, width, height } = this.state;
-
-    if (!graph) return console.error("> graph is not defined!");
-
     let force = d3
-      .forceSimulation(nodes)
-      .force("charge", d3.forceManyBody().strength(-30))
+      .forceSimulation(initNodes)
+      .force("charge", d3.forceManyBody().strength(-5))
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force(
         "link",
         d3
-          .forceLink<GraphNode, Link>(links)
+          .forceLink<GraphNode, Link>(initLinks)
           .id(d => d.id.toString())
           .distance(50)
-      );
+      )
+      .force("collide", d3.forceCollide(20));
 
-    let linkGroup = graph.select<SVGGElement>(".links");
-    if (linkGroup.size() === 0)
-      linkGroup = graph
-        .append("g")
-        .attr("class", "links")
-        .attr("stroke", "#61DAFB")
-        .attr("stroke-width", 2);
-
-    let link = linkGroup
-      .selectAll("line")
-      .data(links)
-      .join("line");
-
-    link.exit().remove();
-
-    let nodeGroup = graph.select<SVGGElement>(".nodes");
-    if (nodeGroup.size() === 0)
-      nodeGroup = graph.append("g").attr("class", "nodes");
-
-    let node: d3.Selection<
-      any,
-      GraphNode,
-      SVGGElement,
-      {}
-    > = nodeGroup.selectAll(".node").data(nodes);
-    if (node.size() < nodes.length)
-      node = node
-        .enter()
-        .append("g")
-        .attr("class", "node")
-        .attr("fill", "#fff")
-        .attr("text-anchor", "middle");
-
-    node.exit().remove();
-
-    let circles = node.select<SVGCircleElement>("circle");
-    if (circles.size() === 0) circles = node.append("circle");
-    circles
-      .attr("r", 14)
-      .attr("fill", "#282c34")
-      .attr("stroke", "#fff")
-      .attr("stroke-width", "2")
-      .call(this.drag(force) as any);
-
-    let labels = node.select<SVGTextElement>("text");
-    if (labels.size() === 0) labels = node.append("text");
-    labels
-      .text(d => (d.label ? d.label : d.id.toString()))
-      .attr("alignment-baseline", "middle");
+    let self = this;
 
     force.on("tick", () => {
-      link
+      if (!self.d3state) return console.error("> d3state is not defined!");
+      let { linkSelection, nodeSelection } = self.d3state;
+      linkSelection
         .attr("x1", d => {
           let currentNode = d.source as GraphNode;
           return currentNode.x ? currentNode.x : null;
@@ -167,14 +110,116 @@ export default class Graph extends React.Component<{}, TState> {
           return destNode.y ? destNode.y : null;
         });
 
-      circles
-        .attr("cx", d => (d.x ? d.x : null))
+      nodeSelection
+        .select("circle")
+        .attr("cx", d => {
+          return d.x ? d.x : null;
+        })
         .attr("cy", d => (d.y ? d.y : null));
 
-      labels
+      nodeSelection
+        .select("text")
         .attr("x", d => (d.x ? d.x : null))
         .attr("y", d => (d.y ? d.y + 2 : null));
     });
+
+    let link = graph
+      .append("g")
+      .attr("class", "links")
+      .attr("stroke", "#61DAFB")
+      .attr("stroke-width", 2);
+
+    let linkSelection = link.selectAll<SVGLineElement, Link>("line");
+
+    let node = graph.append("g").attr("class", "nodes");
+
+    let nodeSelection = node.selectAll<SVGGElement, GraphNode>(".node");
+
+    this.d3state = {
+      svg,
+      linkSelection,
+      nodeSelection,
+      force,
+      width,
+      height
+    };
+    this.updateGraph();
+  };
+
+  updateGraph = () => {
+    let { nodes, links } = this.state;
+    if (!this.d3state) return console.error("> d3state is not defined!");
+    let { linkSelection, nodeSelection, force, width, height } = this.d3state;
+
+    if (!linkSelection) return console.error("> linkSelection is not defined!");
+    if (!nodeSelection) return console.error("> linkSelection is not defined!");
+    if (!force) return console.error("> force is not defined!");
+
+    linkSelection = linkSelection.data(links);
+    linkSelection.exit().remove();
+
+    linkSelection = linkSelection
+      .enter()
+      .append("line")
+      .merge(linkSelection);
+
+    nodeSelection = nodeSelection.data(nodes);
+    nodeSelection
+      .exit()
+      .transition()
+      .duration(250)
+      .attr("fill", "none")
+      .remove();
+
+    nodeSelection = nodeSelection
+      .enter()
+      .append("g")
+      .attr("class", "node")
+      .merge(nodeSelection);
+
+    let circles = nodeSelection.select<SVGCircleElement>("circle");
+    if (circles.size() < nodes.length) {
+      circles.remove();
+      circles = nodeSelection
+        .append("circle")
+        .attr("r", 14)
+        .attr("fill", "#282c34")
+        .attr("stroke", "#fff")
+        .attr("stroke-width", "2")
+        .attr("cx", width / 2)
+        .attr("cy", height / 2)
+        .call(this.drag(force) as any);
+    }
+    let labels = nodeSelection.select<SVGTextElement>("text");
+    if (labels.size() < nodes.length) {
+      labels.remove();
+      labels = nodeSelection
+        .append("text")
+        .text(d => (d.label ? d.label : d.id))
+        .attr("alignment-baseline", "middle")
+        .attr("x", width / 2)
+        .attr("y", height / 2)
+        .call(this.drag(force) as any);
+    }
+    force = force
+      .nodes(nodes)
+      .force("charge", d3.forceManyBody().strength(0))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force(
+        "link",
+        d3
+          .forceLink<GraphNode, Link>(links)
+          .distance(50)
+          .id(d => d.id.toString())
+      )
+      .force("collide", d3.forceCollide(20));
+
+    this.d3state = {
+      ...this.d3state,
+      linkSelection,
+      nodeSelection
+    };
+    force.restart();
   };
 
   drag = (simulation: d3.Simulation<GraphNode, Link>) => {
@@ -202,16 +247,31 @@ export default class Graph extends React.Component<{}, TState> {
       .on("end", dragEnded);
   };
 
+  addNode = () => {
+    let { nodes } = this.state;
+    nodes.push({
+      id: nodes[nodes.length - 1].id + 1
+    });
+    this.setState({
+      ...this.state,
+      nodes
+    });
+  };
+
   render = () => {
-    if (this.state.graph) this.updateGraph();
+    let { mode } = this.state;
+    this.updateGraph();
     return (
       <div className="wrapper">
-        <div id="graphContainer" />
+        <div
+          id="graphContainer"
+          onClick={() => {
+            mode === "modify" ? this.addNode() : null;
+          }}
+        />
         <div className="controls">
           <button
-            className={
-              "control-btn " + (this.state.mode === "drag" ? "active" : "")
-            }
+            className={"control-btn " + (mode === "drag" ? "active" : "")}
             onClick={() => {
               this.setState({ mode: "drag" });
             }}
@@ -221,9 +281,7 @@ export default class Graph extends React.Component<{}, TState> {
             </svg>
           </button>
           <button
-            className={
-              "control-btn " + (this.state.mode === "modify" ? "active" : "")
-            }
+            className={"control-btn " + (mode === "modify" ? "active" : "")}
             onClick={() => {
               this.setState({ mode: "modify" });
             }}
