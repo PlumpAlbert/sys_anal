@@ -10,6 +10,11 @@
   user-select: none;
 }
 
+.links {
+  stroke: #61dafb;
+  stroke-width: 2;
+}
+
 .node {
   text-anchor: middle;
   fill: #61dafb;

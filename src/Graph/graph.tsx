@@ -1,6 +1,7 @@
 import React from "react";
 import * as d3 from "d3";
 import "./graph.css";
+import { svg } from "d3";
 
 interface GraphNode extends d3.SimulationNodeDatum {
   id: number;
@@ -20,8 +21,7 @@ type TState = {
 };
 
 type D3State = {
-  /** Root svg element */
-  svg: d3.Selection<SVGSVGElement, {}, HTMLElement, {}>;
+  userLink: d3.Selection<SVGLineElement, {}, HTMLElement, any>;
   linkSelection: d3.Selection<SVGLineElement, Link, SVGGElement, {}>;
   nodeSelection: d3.Selection<SVGGElement, GraphNode, SVGGElement, {}>;
   force: d3.Simulation<GraphNode, Link>;
@@ -61,8 +61,11 @@ const initState: TState = {
   mode: "modify"
 };
 
+const circleRadius = 14;
+
 export default class Graph extends React.Component<{}, TState> {
   d3state: D3State | null = null;
+  startNode: GraphNode | null = null;
   state = initState;
 
   componentDidMount = () => {
@@ -71,18 +74,58 @@ export default class Graph extends React.Component<{}, TState> {
       .select("#graphContainer")
       .append("svg")
       .attr("width", "100%")
-      .attr("height", "100%");
+      .attr("height", "100%")
+      .on("mouseup", () => {
+        if (this.startNode) {
+          this.startNode = null;
+          userLink.attr('x1', 0)
+            .attr('y1', 0)
+            .attr('x2', 0)
+            .attr('y2', 0);
+        }
+        else if (this.state.mode === "modify") {
+          let { nodes } = this.state;
+          let rect = (d3.event
+            .target as HTMLElement).getBoundingClientRect();
+          nodes.push({
+            id: nodes[nodes.length - 1].id + 1,
+            x: d3.event.clientX - rect.left - circleRadius,
+            y: d3.event.clientY - rect.top - circleRadius
+          });
+          this.setState({
+            nodes
+          });
+        }
+      });
+    let userLink = svg
+      .append<SVGLineElement>('line')
+      .attr('class', 'links')
+      .attr('x1', 0)
+      .attr('y1', 0)
+      .attr('x2', 0)
+      .attr('y2', 0);
+    function onMouseMove(this: Graph, D3: typeof d3) {
+      if (this.state.mode !== 'modify' || !this.startNode) return;
+      if (!this.startNode.x || !this.startNode.y) return;
+
+      userLink.attr('x1', this.startNode.x + circleRadius)
+        .attr('y1', this.startNode.y + circleRadius)
+        .attr('x2', D3.mouse(svg.node() as SVGSVGElement)[0])
+        .attr('y2', D3.mouse(svg.node() as SVGSVGElement)[1]);
+    };
+    svg.on('mousemove', onMouseMove.bind(this, d3));
+
     let graph = svg
       .append("g")
       .attr("transform", `translate(${padding},${padding})`);
+
     let width = parseFloat(svg.style("width")),
       height = parseFloat(svg.style("height"));
 
-    let self = this;
     let force = d3
       .forceSimulation(initNodes)
       .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("charge", d3.forceManyBody().strength(-5))
+      .force("charge", d3.forceManyBody().strength(0))
       .force(
         "link",
         d3
@@ -90,11 +133,11 @@ export default class Graph extends React.Component<{}, TState> {
           .id(d => d.id.toString())
           .distance(50)
       )
-      .force("collide", d3.forceCollide(20))
+      .force("collide", d3.forceCollide(circleRadius + 2))
       .alphaTarget(0.1)
       .on("tick", () => {
-        if (!self.d3state) return console.error("> d3state is not defined!");
-        let { linkSelection, nodeSelection } = self.d3state;
+        if (!this.d3state) return console.error("> d3state is not defined!");
+        let { linkSelection, nodeSelection } = this.d3state;
         linkSelection
           .attr("x1", d => {
             let currentNode = d.source as GraphNode;
@@ -113,6 +156,19 @@ export default class Graph extends React.Component<{}, TState> {
             return destNode.y ? destNode.y : null;
           });
 
+        if (this.startNode
+          && this.startNode.x
+          && this.startNode.y
+        ) {
+          console.log(this.startNode.x, this.startNode.y);
+          userLink.attr('x1', this.startNode.x + circleRadius)
+            .attr('y1', this.startNode.y + circleRadius);
+
+          if (userLink.attr('x2') === '0' && userLink.attr('y2') === '0') {
+            userLink.attr('x2', this.startNode.x + circleRadius)
+              .attr('y2', this.startNode.y + circleRadius);
+          }
+        }
         nodeSelection
           .select("circle")
           .attr("cx", d => {
@@ -128,9 +184,7 @@ export default class Graph extends React.Component<{}, TState> {
 
     let link = graph
       .append("g")
-      .attr("class", "links")
-      .attr("stroke", "#61DAFB")
-      .attr("stroke-width", 2);
+      .attr("class", "links");
 
     let linkSelection = link.selectAll<SVGLineElement, Link>("line");
 
@@ -139,7 +193,7 @@ export default class Graph extends React.Component<{}, TState> {
     let nodeSelection = node.selectAll<SVGGElement, GraphNode>(".node");
 
     this.d3state = {
-      svg,
+      userLink,
       linkSelection,
       nodeSelection,
       force,
@@ -150,72 +204,102 @@ export default class Graph extends React.Component<{}, TState> {
   };
 
   updateGraph = () => {
-    let { nodes, links } = this.state;
-    if (!this.d3state) return console.error("> d3state is not defined!");
+    if (!this.d3state) return;
+    let { nodes, links, mode } = this.state;
     let { linkSelection, nodeSelection, force, width, height } = this.d3state;
 
     if (!linkSelection) return console.error("> linkSelection is not defined!");
-    if (!nodeSelection) return console.error("> linkSelection is not defined!");
+    if (!nodeSelection) return console.error("> nodeSelection is not defined!");
     if (!force) return console.error("> force is not defined!");
-    force.nodes(nodes);
-    force.force("center", d3.forceCenter(width / 2, height / 2));
-    force.force("charge", d3.forceManyBody().strength(0));
-    force.force(
-      "link",
-      d3
-        .forceLink<GraphNode, Link>(links)
-        .distance(50)
-        .id(d => d.id.toString())
-    );
-    force.force("collide", d3.forceCollide(20));
-    force.alpha(0.5).restart();
 
-    linkSelection = linkSelection.data(links);
-    linkSelection.exit().remove();
+    let distance = links.length * 2.5;
+    distance = distance < 50 ? 50 : distance > 150 ? 150 : distance;
 
-    linkSelection = linkSelection
-      .enter()
-      .append("line")
-      .merge(linkSelection);
+    if (nodeSelection.size() !== nodes.length) {
+      // Update force to apply on each node
+      force.nodes(nodes);
+      force.force("charge", d3.forceManyBody().strength(0))
+        .force('center', d3.forceCenter(width / 2, height / 2));
 
-    nodeSelection = nodeSelection.data(nodes);
-    nodeSelection
-      .exit()
-      .transition()
-      .duration(250)
-      .attr("fill", "none")
-      .remove();
+      nodeSelection = nodeSelection.data(nodes);
+      nodeSelection
+        .exit()
+        .transition()
+        .duration(250)
+        .attr("fill", "none")
+        .remove();
 
-    nodeSelection = nodeSelection
-      .enter()
-      .append("g")
-      .attr("class", "node")
-      .merge(nodeSelection);
+      let newSelection = nodeSelection
+        .enter()
+        .append("g")
+        .attr("class", "node");
 
-    let circles = nodeSelection.select<SVGCircleElement>("circle");
-    if (circles.size() < nodes.length) {
-      circles.remove();
-      circles = nodeSelection
+      newSelection
+        .on("mousedown", d => {
+          if (this.state.mode !== "modify") return;
+          this.startNode = d;
+        })
+        .on("mouseup", d => {
+          if (this.state.mode !== "modify" || !this.startNode) return;
+          links.push({
+            source: this.startNode,
+            target: d,
+            twoWay: false
+          });
+          this.setState({ links });
+          d3.event.stopPropagation();
+          this.startNode = null;
+          if (this.d3state) {
+            this.d3state.userLink
+              .attr('x1', 0)
+              .attr('y1', 0)
+              .attr('x2', 0)
+              .attr('y2', 0);
+          }
+        })
+        .call(this.drag(force) as any);
+
+      // Append new circles
+      newSelection
         .append("circle")
-        .attr("r", 14)
+        .attr("r", circleRadius)
         .attr("fill", "#282c34")
         .attr("stroke", "#fff")
         .attr("stroke-width", "2")
         .attr("cx", d => (d.x ? d.x : null))
-        .attr("cy", d => (d.y ? d.y : null))
-        .call(this.drag(force) as any);
-    }
-    let labels = nodeSelection.select<SVGTextElement>("text");
-    if (labels.size() < nodes.length) {
-      labels.remove();
-      labels = nodeSelection
+        .attr("cy", d => (d.y ? d.y : null));
+      // Append new labels
+      newSelection
         .append("text")
         .text(d => (d.label ? d.label : d.id))
         .attr("alignment-baseline", "middle")
         .attr("x", d => (d.x ? d.x : null))
-        .attr("y", d => (d.y ? d.y : null))
-        .call(this.drag(force) as any);
+        .attr("y", d => (d.y ? d.y : null));
+
+      nodeSelection = newSelection.merge(nodeSelection);
     }
+    if (linkSelection.size() !== links.length) {
+      // Update force for links
+      force.force(
+        "link",
+        d3
+          .forceLink<GraphNode, Link>(links)
+          .distance(distance)
+          .id(d => d.id.toString())
+      );
+
+      // Draw new links and remove the old ones
+      linkSelection = linkSelection.data(links);
+      linkSelection.exit().remove();
+
+      linkSelection = linkSelection
+        .enter()
+        .append("line")
+        .merge(linkSelection);
+    }
+
+    // Reset the force timer
+    force.alpha(1).restart();
 
     this.d3state = {
       ...this.d3state,
@@ -249,31 +333,12 @@ export default class Graph extends React.Component<{}, TState> {
       .on("end", dragEnded);
   };
 
-  addNode = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    let { nodes } = this.state;
-    let rect = (event.target as HTMLDivElement).getBoundingClientRect();
-    nodes.push({
-      id: nodes[nodes.length - 1].id + 1,
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top
-    });
-    this.setState({
-      ...this.state,
-      nodes
-    });
-  };
-
   render = () => {
     let { mode } = this.state;
     this.updateGraph();
     return (
       <div className="wrapper">
-        <div
-          id="graphContainer"
-          onClick={event => {
-            mode === "modify" ? this.addNode(event) : null;
-          }}
-        />
+        <div id="graphContainer" />
         <div className="controls">
           <button
             className={"control-btn " + (mode === "drag" ? "active" : "")}
