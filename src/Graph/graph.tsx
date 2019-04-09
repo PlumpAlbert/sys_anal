@@ -11,7 +11,7 @@ interface D3State {
   /** Link that used by user to add new links */
   userLink: d3.Selection<SVGLineElement, {}, HTMLElement, any>;
   /** Selection of all links on the screen */
-  linkSelection: d3.Selection<SVGLineElement, Link, SVGGElement, {}>;
+  linkSelection: d3.Selection<SVGPathElement, Link, SVGGElement, {}>;
   /** Selection of all nodes on the screen */
   nodeSelection: d3.Selection<SVGGElement, GraphNode, SVGGElement, {}>;
   /** Force simulation for nodes and links */
@@ -32,6 +32,7 @@ interface IDispatchToProps {
 interface IProps extends IStateToProps, IDispatchToProps { }
 
 const circleRadius = 14;
+const lineGenerator = d3.line().curve(d3.curveCatmullRomOpen);
 
 export class Graph extends React.Component<IProps, IState> {
   d3state?: D3State;
@@ -126,41 +127,52 @@ export class Graph extends React.Component<IProps, IState> {
       .on("tick", () => {
         if (!this.d3state) return console.error("> d3state is not defined!");
         let { linkSelection, nodeSelection } = this.d3state;
-        linkSelection
-          .attr("x1", d => {
-            let currentNode = d.source as GraphNode;
-            return currentNode.x ? currentNode.x : null;
-          })
-          .attr("y1", d => {
-            let currentNode = d.source as GraphNode;
-            return currentNode.y ? currentNode.y : null;
-          })
-          .attr("x2", d => {
-            let srcNode = d.source as GraphNode;
-            let destNode = d.target as GraphNode;
-            if (!destNode.x
-              || !destNode.y
-              || !srcNode.x
-              || !srcNode.y) {
-              console.error('src', srcNode, 'dest', destNode);
-              return 0;
-            }
-            let angle = Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x);
-            return destNode.x - 1.8 * circleRadius * Math.cos(angle);
-          })
-          .attr("y2", d => {
-            let srcNode = d.source as GraphNode;
-            let destNode = d.target as GraphNode;
-            if (!destNode.x
-              || !destNode.y
-              || !srcNode.x
-              || !srcNode.y) {
-              console.error('src', srcNode, 'dest', destNode);
-              return 0;
-            }
-            let angle = Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x);
-            return destNode.y - 1.8 * circleRadius * Math.sin(angle);
-          });
+        linkSelection.attr('d', d => {
+          let src = {
+            x: (d.source as GraphNode).x as number,
+            y: (d.source as GraphNode).y as number
+          };
+          let dest = {
+            x: (d.target as GraphNode).x as number,
+            y: (d.target as GraphNode).y as number
+          };
+          return `M${src.x},${src.y} S${(dest.x + src.x) / 2},${(dest.y + src.y) / 2} ${dest.x},${dest.y}Z`;
+        });
+        // linkSelection
+        //   .attr("x1", d => {
+        //     let currentNode = d.source as GraphNode;
+        //     return currentNode.x ? currentNode.x : null;
+        //   })
+        //   .attr("y1", d => {
+        //     let currentNode = d.source as GraphNode;
+        //     return currentNode.y ? currentNode.y : null;
+        //   })
+        //   .attr("x2", d => {
+        //     let srcNode = d.source as GraphNode;
+        //     let destNode = d.target as GraphNode;
+        //     if (!destNode.x
+        //       || !destNode.y
+        //       || !srcNode.x
+        //       || !srcNode.y) {
+        //       console.error('src', srcNode, 'dest', destNode);
+        //       return 0;
+        //     }
+        //     let angle = Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x);
+        //     return destNode.x - 1.8 * circleRadius * Math.cos(angle);
+        //   })
+        //   .attr("y2", d => {
+        //     let srcNode = d.source as GraphNode;
+        //     let destNode = d.target as GraphNode;
+        //     if (!destNode.x
+        //       || !destNode.y
+        //       || !srcNode.x
+        //       || !srcNode.y) {
+        //       console.error('src', srcNode, 'dest', destNode);
+        //       return 0;
+        //     }
+        //     let angle = Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x);
+        //     return destNode.y - 1.8 * circleRadius * Math.sin(angle);
+        //   });
 
         if (this.startNode
           && this.startNode.x
@@ -192,7 +204,7 @@ export class Graph extends React.Component<IProps, IState> {
       .append("g")
       .attr("class", "links");
 
-    let linkSelection = link.selectAll<SVGLineElement, Link>("line");
+    let linkSelection = link.selectAll<SVGPathElement, Link>("path");
 
     let node = graph.append("g").attr("class", "nodes");
 
@@ -303,7 +315,7 @@ export class Graph extends React.Component<IProps, IState> {
 
       linkSelection = linkSelection
         .enter()
-        .append("line")
+        .append("path")
         .merge(linkSelection);
     }
 
