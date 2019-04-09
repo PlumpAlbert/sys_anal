@@ -1,72 +1,44 @@
 import React from "react";
 import * as d3 from "d3";
+import { connect, MapDispatchToProps, MapStateToProps } from 'react-redux';
+import { GraphNode, Link, IGlobalState, nodeUpdate, linkUpdate } from "../store";
 import "./graph.css";
-import { svg } from "d3";
 
-interface GraphNode extends d3.SimulationNodeDatum {
-  id: number;
-  label?: string;
-}
-
-interface Link extends d3.SimulationLinkDatum<GraphNode> {
-  twoWay: boolean;
-}
-
-type TState = {
-  /** Graph nodes */
-  nodes: GraphNode[];
-  /** Links between two nodes */
-  links: Link[];
+interface IState {
   mode: "drag" | "modify";
 };
-
-type D3State = {
+interface D3State {
+  /** Link that used by user to add new links */
   userLink: d3.Selection<SVGLineElement, {}, HTMLElement, any>;
+  /** Selection of all links on the screen */
   linkSelection: d3.Selection<SVGLineElement, Link, SVGGElement, {}>;
+  /** Selection of all nodes on the screen */
   nodeSelection: d3.Selection<SVGGElement, GraphNode, SVGGElement, {}>;
+  /** Force simulation for nodes and links */
   force: d3.Simulation<GraphNode, Link>;
   /** Width of the container */
   width: number;
   /** Height of the container */
   height: number;
 };
-
-const initNodes: GraphNode[] = [
-  { id: 0 },
-  { id: 1 },
-  { id: 2 },
-  { id: 3 },
-  { id: 4 },
-  { id: 5 },
-  { id: 6 },
-  { id: 7 },
-  { id: 8 },
-  { id: 9 },
-  { id: 10 }
-];
-
-const initLinks: Link[] = [
-  { source: initNodes[0], target: initNodes[1], twoWay: false },
-  { source: initNodes[2], target: initNodes[1], twoWay: true },
-  { source: initNodes[4], target: initNodes[0], twoWay: false },
-  { source: initNodes[2], target: initNodes[5], twoWay: false },
-  { source: initNodes[4], target: initNodes[6], twoWay: true },
-  { source: initNodes[3], target: initNodes[7], twoWay: false },
-  { source: initNodes[7], target: initNodes[5], twoWay: true }
-];
-
-const initState: TState = {
-  nodes: initNodes,
-  links: initLinks,
-  mode: "modify"
-};
+interface IStateToProps {
+  nodes: GraphNode[],
+  links: Link[]
+}
+interface IDispatchToProps {
+  setNodes: (nodes: GraphNode[]) => void,
+  setLinks: (nodes: Link[]) => void
+}
+interface IProps extends IStateToProps, IDispatchToProps { }
 
 const circleRadius = 14;
 
-export default class Graph extends React.Component<{}, TState> {
-  d3state: D3State | null = null;
+export class Graph extends React.Component<IProps, IState> {
+  d3state?: D3State;
   startNode: GraphNode | null = null;
-  state = initState;
+  state: IState = {
+    mode: "drag"
+  };
 
   componentDidMount = () => {
     let padding = 20;
@@ -78,13 +50,15 @@ export default class Graph extends React.Component<{}, TState> {
       .on("mouseup", () => {
         if (this.startNode) {
           this.startNode = null;
-          userLink.attr('x1', 0)
+          userLink
+            .attr('class', 'hidden')
+            .attr('x1', 0)
             .attr('y1', 0)
             .attr('x2', 0)
             .attr('y2', 0);
         }
         else if (this.state.mode === "modify") {
-          let { nodes } = this.state;
+          let { nodes } = this.props;
           let rect = (d3.event
             .target as HTMLElement).getBoundingClientRect();
           nodes.push({
@@ -92,14 +66,28 @@ export default class Graph extends React.Component<{}, TState> {
             x: d3.event.clientX - rect.left - circleRadius,
             y: d3.event.clientY - rect.top - circleRadius
           });
-          this.setState({
-            nodes
-          });
+          this.props.setNodes(nodes);
+          this.updateGraph();
         }
       });
+    svg
+      .append('defs')
+      .append('marker')
+      .attr('id', 'arrow')
+      .attr('viewBox', "0 0 20 20")
+      .attr('refX', 0)
+      .attr('refY', 10)
+      .attr('markerUnits', 'userSpaceOnUse')
+      .attr('orient', 'auto')
+      .attr('markerWidth', 10)
+      .attr('markerHeight', 10)
+      .append('polyline')
+      .attr('id', 'markerPoly1')
+      .attr('points', "0,0 20,10 0,20 2,10")
+      .attr('fill', 'crimson');
     let userLink = svg
       .append<SVGLineElement>('line')
-      .attr('class', 'links')
+      .attr('class', 'links hidden')
       .attr('x1', 0)
       .attr('y1', 0)
       .attr('x2', 0)
@@ -123,13 +111,13 @@ export default class Graph extends React.Component<{}, TState> {
       height = parseFloat(svg.style("height"));
 
     let force = d3
-      .forceSimulation(initNodes)
+      .forceSimulation(this.props.nodes)
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force("charge", d3.forceManyBody().strength(0))
       .force(
         "link",
         d3
-          .forceLink<GraphNode, Link>(initLinks)
+          .forceLink<GraphNode, Link>(this.props.links)
           .id(d => d.id.toString())
           .distance(50)
       )
@@ -148,12 +136,30 @@ export default class Graph extends React.Component<{}, TState> {
             return currentNode.y ? currentNode.y : null;
           })
           .attr("x2", d => {
+            let srcNode = d.source as GraphNode;
             let destNode = d.target as GraphNode;
-            return destNode.x ? destNode.x : null;
+            if (!destNode.x
+              || !destNode.y
+              || !srcNode.x
+              || !srcNode.y) {
+              console.error('src', srcNode, 'dest', destNode);
+              return 0;
+            }
+            let angle = Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x);
+            return destNode.x - 1.8 * circleRadius * Math.cos(angle);
           })
           .attr("y2", d => {
+            let srcNode = d.source as GraphNode;
             let destNode = d.target as GraphNode;
-            return destNode.y ? destNode.y : null;
+            if (!destNode.x
+              || !destNode.y
+              || !srcNode.x
+              || !srcNode.y) {
+              console.error('src', srcNode, 'dest', destNode);
+              return 0;
+            }
+            let angle = Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x);
+            return destNode.y - 1.8 * circleRadius * Math.sin(angle);
           });
 
         if (this.startNode
@@ -205,7 +211,7 @@ export default class Graph extends React.Component<{}, TState> {
 
   updateGraph = () => {
     if (!this.d3state) return;
-    let { nodes, links, mode } = this.state;
+    let { nodes, links } = this.props;
     let { linkSelection, nodeSelection, force, width, height } = this.d3state;
 
     if (!linkSelection) return console.error("> linkSelection is not defined!");
@@ -213,7 +219,7 @@ export default class Graph extends React.Component<{}, TState> {
     if (!force) return console.error("> force is not defined!");
 
     let distance = links.length * 2.5;
-    distance = distance < 50 ? 50 : distance > 150 ? 150 : distance;
+    distance = distance < 75 ? 75 : distance > 200 ? 200 : distance;
 
     if (nodeSelection.size() !== nodes.length) {
       // Update force to apply on each node
@@ -238,6 +244,7 @@ export default class Graph extends React.Component<{}, TState> {
         .on("mousedown", d => {
           if (this.state.mode !== "modify") return;
           this.startNode = d;
+          this.d3state ? this.d3state.userLink.attr('class', 'links') : null;
         })
         .on("mouseup", d => {
           if (this.state.mode !== "modify" || !this.startNode) return;
@@ -246,16 +253,18 @@ export default class Graph extends React.Component<{}, TState> {
             target: d,
             twoWay: false
           });
-          this.setState({ links });
+          this.props.setLinks(links);
           d3.event.stopPropagation();
           this.startNode = null;
           if (this.d3state) {
             this.d3state.userLink
+              .attr('class', 'hidden')
               .attr('x1', 0)
               .attr('y1', 0)
               .attr('x2', 0)
               .attr('y2', 0);
           }
+          this.updateGraph();
         })
         .call(this.drag(force) as any);
 
@@ -368,3 +377,15 @@ export default class Graph extends React.Component<{}, TState> {
     );
   };
 }
+
+const stateToProps: MapStateToProps<IStateToProps, {}, IGlobalState> = state => ({
+  links: state.links,
+  nodes: state.nodes
+});
+
+const dispatchToProps: MapDispatchToProps<IDispatchToProps, {}> = dispatch => ({
+  setNodes: (nodes) => dispatch(nodeUpdate(nodes)),
+  setLinks: (links) => dispatch(linkUpdate(links))
+})
+
+export default connect(stateToProps, dispatchToProps)(Graph);
