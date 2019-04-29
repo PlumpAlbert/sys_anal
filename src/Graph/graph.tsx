@@ -11,7 +11,7 @@ interface D3State {
   /** Link that used by user to add new links */
   userLink: d3.Selection<SVGLineElement, {}, HTMLElement, any>;
   /** Selection of all links on the screen */
-  linkSelection: d3.Selection<SVGLineElement, Link, SVGGElement, {}>;
+  linkSelection: d3.Selection<SVGPathElement, Link, SVGGElement, {}>;
   /** Selection of all nodes on the screen */
   nodeSelection: d3.Selection<SVGGElement, GraphNode, SVGGElement, {}>;
   /** Force simulation for nodes and links */
@@ -126,7 +126,27 @@ export class Graph extends React.Component<IProps, IState> {
       .on("tick", () => {
         if (!this.d3state) return console.error("> d3state is not defined!");
         let { linkSelection, nodeSelection } = this.d3state;
+
         linkSelection
+          .attr('d', d => {
+            let srcNode = d.source as GraphNode;
+            let destNode = d.target as GraphNode;
+            if (!destNode.x
+              || !destNode.y
+              || !srcNode.x
+              || !srcNode.y) {
+              console.error('src', srcNode, 'dest', destNode);
+              return 0;
+            } else if (srcNode !== destNode) {
+              let angle = Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x);
+              return `M${srcNode.x},${srcNode.y} L${destNode.x - 1.8 * circleRadius * Math.cos(angle)},${destNode.y - 1.8 * circleRadius * Math.sin(angle)}`;
+            } else {
+              return `M${srcNode.x},${srcNode.y} 
+              A ${circleRadius} ${circleRadius} 0 1 1 ${srcNode.x + circleRadius} ${srcNode.y}Z`;
+            }
+          });
+
+        /*linkSelection
           .attr("x1", d => {
             let currentNode = d.source as GraphNode;
             return currentNode.x ? currentNode.x : null;
@@ -160,13 +180,12 @@ export class Graph extends React.Component<IProps, IState> {
             }
             let angle = Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x);
             return destNode.y - 1.8 * circleRadius * Math.sin(angle);
-          });
+          });*/
 
         if (this.startNode
           && this.startNode.x
           && this.startNode.y
         ) {
-          console.log(this.startNode.x, this.startNode.y);
           userLink.attr('x1', this.startNode.x + circleRadius)
             .attr('y1', this.startNode.y + circleRadius);
 
@@ -192,7 +211,7 @@ export class Graph extends React.Component<IProps, IState> {
       .append("g")
       .attr("class", "links");
 
-    let linkSelection = link.selectAll<SVGLineElement, Link>("line");
+    let linkSelection = link.selectAll<SVGPathElement, Link>("path");
 
     let node = graph.append("g").attr("class", "nodes");
 
@@ -248,13 +267,14 @@ export class Graph extends React.Component<IProps, IState> {
         })
         .on("mouseup", d => {
           if (this.state.mode !== "modify" || !this.startNode) return;
+          let e = d3.event as MouseEvent;
           links.push({
             source: this.startNode,
             target: d,
             twoWay: false
           });
           this.props.setLinks(links);
-          d3.event.stopPropagation();
+          e.stopPropagation();
           this.startNode = null;
           if (this.d3state) {
             this.d3state.userLink
@@ -303,7 +323,7 @@ export class Graph extends React.Component<IProps, IState> {
 
       linkSelection = linkSelection
         .enter()
-        .append("line")
+        .append("path")
         .merge(linkSelection);
     }
 
