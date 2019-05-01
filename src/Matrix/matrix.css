@@ -1,0 +1,36 @@
+.Matrix {
+  font-family: "Courier Prime Sans", Consolas, "DejaVu Sans Mono", monospace;
+  max-width: 30vw;
+  overflow: auto;
+}
+
+.matrix-table {
+  min-width: 100%;
+  empty-cells: show;
+}
+
+.matrix-table td:nth-child(even) {
+  background-color: hsla(193, 75%, 75%, .6);
+  color: hsl(193, 25%, 18%);
+}
+
+.matrix-table tr {
+  display: flex;
+  align-items: center;
+}
+
+.matrix-table td,
+.matrix-table th {
+  width: 1.5rem;
+  min-height: 1.2rem;
+  flex: 1;
+}
+
+.Matrix,
+.matrix-table th {
+  color: hsl(200, 90%, 70%);
+}
+
+.matrix-table td {
+  color: hsl(192, 100%, 95%);
+}
