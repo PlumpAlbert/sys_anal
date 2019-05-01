@@ -2,15 +2,22 @@ import React, { Component } from "react";
 import logo from "./logo.svg";
 import "./App.css";
 import Graph from "./Graph/graph";
+import Matrix from "./Matrix";
 
 class App extends Component {
   render() {
     return (
       <div className="App">
         <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
+          <img src={logo} className="App-logo" alt="logo"/>
         </header>
-        <Graph />
+        <div className='app-wrapper'>
+          <Graph />
+          <div className='wrapper'>
+            <Matrix type='Incidence'/>
+            <Matrix type='Adjacency'/>
+          </div>
+        </div>
       </div>
     );
   }

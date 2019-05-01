@@ -1,8 +1,8 @@
 .App {
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background-color: #282c34;
-  height: 100%;
   text-align: center;
 }
 
@@ -19,10 +19,26 @@
   justify-content: center;
   font-size: calc(10px + 2vmin);
   color: white;
+  background-color: hsl(220, 13%, 15%);
 }
 
 .App-link {
   color: #61dafb;
+}
+
+.app-wrapper {
+  height: calc(100vh - 10vmin);
+  display: flex;
+  flex-direction: row;
+}
+
+.wrapper {
+  background-color: hsl(220, 13%, 15%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex: 1;
+  padding: 0 8px;
 }
 
 @keyframes App-logo-spin {
