@@ -31,17 +31,21 @@
     "not op_mini all"
   ],
   "devDependencies": {
-    "@types/react-redux": "^7.0.6",
     "@types/d3": "^5.7.1",
+    "@types/enzyme": "^3.9.1",
     "@types/jest": "24.0.11",
     "@types/node": "11.11.6",
     "@types/react": "16.8.8",
     "@types/react-dom": "16.8.3",
+    "@types/react-redux": "^7.0.6",
     "@types/redux": "^3.6.0",
-    "react-scripts": "2.1.8",
-    "typescript": "3.3.4000",
+    "enzyme": "^3.9.0",
+    "enzyme-adapter-react-16": "^1.12.1",
     "react-redux": "^7.0.1",
+    "react-scripts": "2.1.8",
+    "react-test-renderer": "^16.8.6",
     "redux": "^4.0.1",
-    "typesafe-actions": "^4.0.0"
+    "typesafe-actions": "^4.0.0",
+    "typescript": "3.3.4000"
   }
 }
