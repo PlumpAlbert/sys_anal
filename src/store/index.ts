@@ -8,6 +8,7 @@ export interface GraphNode extends d3.SimulationNodeDatum {
 }
 
 export interface Link extends d3.SimulationLinkDatum<GraphNode> {
+  label: string;
   twoWay: boolean;
 }
 
@@ -26,26 +27,26 @@ export const nodeUpdate = createStandardAction(ActionConst.updateNodes)<GraphNod
 type TActions = ReturnType<typeof linkUpdate> | ReturnType<typeof nodeUpdate>;
 
 const initNodes: GraphNode[] = [
-  { id: 0 },
-  { id: 1 },
-  { id: 2 },
-  { id: 3 },
-  { id: 4 },
-  { id: 5 },
-  { id: 6 },
-  { id: 7 },
-  { id: 8 },
-  { id: 9 },
-  { id: 10 }
+  {id: 0},
+  {id: 1},
+  {id: 2},
+  {id: 3},
+  {id: 4},
+  {id: 5},
+  {id: 6},
+  {id: 7},
+  {id: 8},
+  {id: 9},
+  {id: 10}
 ];
 const initLinks: Link[] = [
-  { source: initNodes[0], target: initNodes[1], twoWay: false },
-  { source: initNodes[2], target: initNodes[1], twoWay: true },
-  { source: initNodes[4], target: initNodes[0], twoWay: false },
-  { source: initNodes[2], target: initNodes[5], twoWay: false },
-  { source: initNodes[4], target: initNodes[6], twoWay: true },
-  { source: initNodes[3], target: initNodes[7], twoWay: false },
-  { source: initNodes[7], target: initNodes[5], twoWay: true }
+  {source: initNodes[0], target: initNodes[1], twoWay: false, label: 'e0'},
+  {source: initNodes[2], target: initNodes[1], twoWay: true, label: 'e1'},
+  {source: initNodes[4], target: initNodes[0], twoWay: false, label: 'e2'},
+  {source: initNodes[2], target: initNodes[5], twoWay: false, label: 'e3'},
+  {source: initNodes[4], target: initNodes[6], twoWay: true, label: 'e4'},
+  {source: initNodes[3], target: initNodes[7], twoWay: false, label: 'e5'},
+  {source: initNodes[7], target: initNodes[5], twoWay: true, label: 'e6'}
 ];
 
 export const mainReducer: Reducer<IGlobalState, TActions> = (state = {
@@ -54,11 +55,11 @@ export const mainReducer: Reducer<IGlobalState, TActions> = (state = {
 }, action) => {
   switch (action.type) {
     case ActionConst.updateNodes: {
-      return { ...state, nodes: action.payload };
+      return {...state, nodes: action.payload};
     }
     case ActionConst.updateLinks: {
-      return { ...state, links: action.payload };
+      return {...state, links: action.payload};
     }
   }
   return state;
-}
+};
