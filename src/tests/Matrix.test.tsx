@@ -9,12 +9,12 @@ describe('Testing Matrix component', () => {
   beforeEach(() => {
     nodes = [
       { id: 1, label: 'A' },
-      { id: 1, label: 'B' },
-      { id: 1, label: 'C' }
+      { id: 2, label: 'B' },
+      { id: 3, label: 'C' }
     ];
     links = [
       { source: nodes[0], target: nodes[1], twoWay: false, label: 'e0' },
-      { source: nodes[2], target: nodes[1], twoWay: false, label: 'e1' },
+      { source: nodes[2], target: nodes[1], twoWay: true, label: 'e1' },
       { source: nodes[2], target: nodes[2], twoWay: true, label: 'e2' }
     ]
   });
