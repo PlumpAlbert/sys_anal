@@ -1,12 +1,12 @@
 import React from "react";
 import * as d3 from "d3";
 import {connect, MapDispatchToProps, MapStateToProps} from 'react-redux';
-import {GraphNode, Link, IGlobalState, nodeUpdate, linkUpdate} from "../store";
+import {GraphNode, IGlobalState, Link, linkUpdate, nodeUpdate} from "../store";
 import "./graph.css";
 
 interface IState {
   mode: "drag" | "modify";
-};
+}
 
 interface D3State {
   /** Link that used by user to add new links */
@@ -122,7 +122,8 @@ export class Graph extends React.Component<IProps, IState> {
           .attr('y1', this.startNode.y + circleRadius)
           .attr('x2', D3.mouse(svg.node() as SVGSVGElement)[0])
           .attr('y2', D3.mouse(svg.node() as SVGSVGElement)[1]);
-    };
+    }
+
     svg.on('mousemove', onMouseMove.bind(this, d3));
 
     let graph = svg
@@ -431,6 +432,6 @@ const stateToProps: MapStateToProps<IStateToProps, {}, IGlobalState> = state => 
 const dispatchToProps: MapDispatchToProps<IDispatchToProps, {}> = dispatch => ({
   setNodes: (nodes) => dispatch(nodeUpdate(nodes)),
   setLinks: (links) => dispatch(linkUpdate(links))
-})
+});
 
 export default connect(stateToProps, dispatchToProps)(Graph);

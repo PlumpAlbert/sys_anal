@@ -1,6 +1,6 @@
 import * as d3 from "d3";
-import { Reducer } from 'redux'
-import { createStandardAction } from "typesafe-actions";
+import {Reducer} from 'redux'
+import {createStandardAction} from "typesafe-actions";
 
 export interface GraphNode extends d3.SimulationNodeDatum {
   id: number;
