@@ -14,12 +14,8 @@ const Matrix: React.FC<IOwnProps & IStoreProps> = (props) => {
       <table className='matrix-table'>
         <thead>
           <tr>
-            <th></th>
-            {props.nodes.sort((a, b) => {
-              if (a.id > b.id) return 1;
-              else if (a.id < b.id) return -1;
-              return 0;
-            }).map(node => <th key={`head_${node.id}`}>{node.id}</th>)}
+            <th> </th>
+            {props.nodes.map(node => <th key={`head_${node.id}`}>{node.id}</th>)}
           </tr>
         </thead>
         <tbody>{
