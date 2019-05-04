@@ -28,8 +28,13 @@
 
 .app-wrapper {
     height: calc(100vh - 10vmin);
+    width: 100vw;
     display: flex;
     flex-direction: row;
+}
+
+.app-wrapper > .graph {
+    flex: 1.5;
 }
 
 .wrapper {
@@ -39,6 +44,7 @@
     justify-content: space-around;
     flex: 1;
     padding: 0 8px;
+    max-width: 35vw;
 }
 
 @keyframes App-logo-spin {

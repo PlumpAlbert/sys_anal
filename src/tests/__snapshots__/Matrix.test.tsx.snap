@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Testing Matrix component Creates adjacency matrix correctly 1`] = `"<div class=\\"Matrix\\"><h2 class=\\"Matrix-header\\">Adjacency matrix</h2><table class=\\"matrix-table\\"><thead><tr><th></th><th>1</th><th>2</th><th>3</th></tr></thead><tbody><tr><th>1</th><td>0</td><td>1</td><td>0</td></tr><tr><th>2</th><td>0</td><td>0</td><td>1</td></tr><tr><th>3</th><td>0</td><td>1</td><td>1</td></tr></tbody></table></div>"`;
+
+exports[`Testing Matrix component Creates incidence matrix correctly 1`] = `"<div class=\\"Matrix\\"><h2 class=\\"Matrix-header\\">Incidence matrix</h2><table class=\\"matrix-table\\"><thead><tr><th> </th><th>e0</th><th>e1</th><th>e2</th></tr></thead><tbody><tr><th>1</th><td>1</td><td>0</td><td>0</td></tr><tr><th>2</th><td>-1</td><td>1</td><td>0</td></tr><tr><th>3</th><td>0</td><td>1</td><td>1</td></tr></tbody></table></div>"`;

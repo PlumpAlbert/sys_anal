@@ -1,6 +1,6 @@
 import * as d3 from "d3";
-import {Reducer} from 'redux'
-import {createStandardAction} from "typesafe-actions";
+import { Reducer } from 'redux'
+import { createStandardAction } from "typesafe-actions";
 
 export interface GraphNode extends d3.SimulationNodeDatum {
   id: number;
@@ -18,35 +18,41 @@ export interface IGlobalState {
 }
 
 enum ActionConst {
-  updateNodes = "@GLOBALSTATE/updateNodes",
-  updateLinks = "@GLOBALSTATE/updateLinks"
+  updateNode = "@GLOBALSTATE/updateNode",
+  updateLink = "@GLOBALSTATE/updateLink"
 }
 
-export const linkUpdate = createStandardAction(ActionConst.updateLinks)<Link[]>();
-export const nodeUpdate = createStandardAction(ActionConst.updateNodes)<GraphNode[]>();
-type TActions = ReturnType<typeof linkUpdate> | ReturnType<typeof nodeUpdate>;
+export const updateLink = createStandardAction(ActionConst.updateLink)<{
+  link: Link,
+  index: number
+}>();
+export const updateNode = createStandardAction(ActionConst.updateNode)<{
+  node: GraphNode,
+  index: number
+}>();
+type TActions = ReturnType<typeof updateLink> | ReturnType<typeof updateNode>;
 
 const initNodes: GraphNode[] = [
-  {id: 0},
-  {id: 1},
-  {id: 2},
-  {id: 3},
-  {id: 4},
-  {id: 5},
-  {id: 6},
-  {id: 7},
-  {id: 8},
-  {id: 9},
-  {id: 10}
+  { id: 0 },
+  { id: 1 },
+  { id: 2 },
+  { id: 3 },
+  { id: 4 },
+  { id: 5 },
+  { id: 6 },
+  { id: 7 },
+  { id: 8 },
+  { id: 9 },
+  { id: 10 }
 ];
 const initLinks: Link[] = [
-  {source: initNodes[0], target: initNodes[1], twoWay: false, label: 'e0'},
-  {source: initNodes[2], target: initNodes[1], twoWay: true, label: 'e1'},
-  {source: initNodes[4], target: initNodes[0], twoWay: false, label: 'e2'},
-  {source: initNodes[2], target: initNodes[5], twoWay: false, label: 'e3'},
-  {source: initNodes[4], target: initNodes[6], twoWay: true, label: 'e4'},
-  {source: initNodes[3], target: initNodes[7], twoWay: false, label: 'e5'},
-  {source: initNodes[7], target: initNodes[5], twoWay: true, label: 'e6'}
+  { source: initNodes[0], target: initNodes[1], twoWay: false, label: 'e0' },
+  { source: initNodes[2], target: initNodes[1], twoWay: true, label: 'e1' },
+  { source: initNodes[4], target: initNodes[0], twoWay: false, label: 'e2' },
+  { source: initNodes[2], target: initNodes[5], twoWay: false, label: 'e3' },
+  { source: initNodes[4], target: initNodes[6], twoWay: true, label: 'e4' },
+  { source: initNodes[3], target: initNodes[7], twoWay: false, label: 'e5' },
+  { source: initNodes[7], target: initNodes[5], twoWay: true, label: 'e6' }
 ];
 
 export const mainReducer: Reducer<IGlobalState, TActions> = (state = {
@@ -54,11 +60,15 @@ export const mainReducer: Reducer<IGlobalState, TActions> = (state = {
   links: initLinks
 }, action) => {
   switch (action.type) {
-    case ActionConst.updateNodes: {
-      return {...state, nodes: action.payload};
+    case ActionConst.updateNode: {
+      let nodes = [...state.nodes];
+      nodes.splice(action.payload.index, 1, action.payload.node);
+      return { ...state, nodes };
     }
-    case ActionConst.updateLinks: {
-      return {...state, links: action.payload};
+    case ActionConst.updateLink: {
+      let links = [...state.links];
+      links.splice(action.payload.index, 1, action.payload.link);
+      return { ...state, links };
     }
   }
   return state;

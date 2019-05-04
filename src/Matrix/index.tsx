@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {connect, MapDispatchToProps, MapStateToProps} from 'react-redux';
-import {GraphNode, IGlobalState, Link, linkUpdate, nodeUpdate} from "../store";
+import {GraphNode, IGlobalState, Link, updateLink, updateNode} from "../store";
 import './matrix.css';
 
 interface IOwnProps {
@@ -8,6 +8,7 @@ interface IOwnProps {
 }
 
 const Matrix: React.FC<IOwnProps & IStoreProps> = (props) => {
+  console.log(`Matrix (${props.type})`, new Date(Date.now()).toLocaleTimeString());
   let table: any = null;
   if (props.type === 'Adjacency') {
     table = (
@@ -94,17 +95,5 @@ const mapS2P: MapStateToProps<IStoreProps, IOwnProps, IGlobalState> = ({nodes, l
   ...ownprops
 });
 
-interface IDispatchProps {
-  updateNodes: (nodes: GraphNode[]) => void,
-  updateLinks: (links: Link[]) => void
-}
-
-const mapD2P: MapDispatchToProps<IDispatchProps, IOwnProps> = (dispatch, ownProps) => ({
-  updateNodes: (nodes) => dispatch(nodeUpdate(nodes)),
-  updateLinks: (links) => dispatch(linkUpdate(links)),
-  ...ownProps
-});
-
-
-export default connect(mapS2P, mapD2P)(Matrix);
+export default connect(mapS2P)(Matrix);
 export {Matrix};
