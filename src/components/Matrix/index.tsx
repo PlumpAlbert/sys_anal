@@ -8,12 +8,15 @@ import {
   updateNode
 } from "../../store";
 import "./matrix.css";
+import { dispatch } from "d3";
 
 interface IOwnProps {
   type: "Adjacency" | "Incidence";
 }
 
-const Matrix: React.FC<IOwnProps & IStoreProps> = props => {
+export type TProps = IOwnProps & IStoreProps & IDispatchProps;
+
+const Matrix: React.FC<TProps> = props => {
   console.log(
     `Matrix (${props.type})`,
     new Date(Date.now()).toLocaleTimeString()
@@ -28,6 +31,11 @@ const Matrix: React.FC<IOwnProps & IStoreProps> = props => {
             {props.nodes.map(node => (
               <th key={`head_${node.id}`}>{node.id}</th>
             ))}
+            <input
+              type="text"
+              placeholder="+"
+              onBlur={() => props.appendLinks(props.links.length)}
+            />
           </tr>
         </thead>
         <tbody>
@@ -57,6 +65,18 @@ const Matrix: React.FC<IOwnProps & IStoreProps> = props => {
               </tr>
             );
           })}
+          <tr>
+            <input
+              type="text"
+              placeholder="+"
+              onBlur={e =>
+                props.appendNodes(props.nodes.length, {
+                  id: props.nodes[props.nodes.length - 1].id + 1,
+                  label: e.target.value
+                })
+              }
+            />
+          </tr>
         </tbody>
       </table>
     );
@@ -71,6 +91,16 @@ const Matrix: React.FC<IOwnProps & IStoreProps> = props => {
             {props.links.map(link => (
               <th key={`head_${link.label}`}>{link.label}</th>
             ))}
+            <input
+              type="text"
+              placeholder="+"
+              onBlur={e =>
+                props.appendNodes(props.nodes.length, {
+                  id: props.nodes[props.nodes.length - 1].id + 1,
+                  label: e.target.value
+                })
+              }
+            />
           </tr>
         </thead>
         <tbody>
@@ -92,6 +122,16 @@ const Matrix: React.FC<IOwnProps & IStoreProps> = props => {
               </tr>
             );
           })}
+          <input
+            type="text"
+            placeholder="+"
+            onBlur={e =>
+              props.appendNodes(props.nodes.length, {
+                id: props.nodes[props.nodes.length - 1].id + 1,
+                label: e.target.value
+              })
+            }
+          />
         </tbody>
       </table>
     );
@@ -117,5 +157,39 @@ const mapS2P: MapStateToProps<IStoreProps, IOwnProps, IGlobalState> = (
   ...ownprops
 });
 
-export default connect(mapS2P)(Matrix);
+interface IDispatchProps {
+  appendNodes: (index: number, node: GraphNode) => void;
+  appendLinks: (index: number) => void;
+}
+
+const mapD2P: MapDispatchToProps<IDispatchProps, IOwnProps> = (
+  dispatch,
+  { type }
+) => ({
+  appendNodes: (index, node) =>
+    dispatch(
+      updateNode({
+        index,
+        node
+      })
+    ),
+  appendLinks: index =>
+    dispatch(
+      updateLink({
+        index,
+        link: {
+          label: `e${index}`,
+          source: "source",
+          target: "target",
+          twoWay: false
+        }
+      })
+    ),
+  type
+});
+
+export default connect(
+  mapS2P,
+  mapD2P
+)(Matrix);
 export { Matrix };
