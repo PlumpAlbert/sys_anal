@@ -8,7 +8,6 @@ import {
   updateNode
 } from "../../store";
 import "./matrix.css";
-import { dispatch } from "d3";
 
 interface IOwnProps {
   type: "Adjacency" | "Incidence";
@@ -16,12 +15,54 @@ interface IOwnProps {
 
 export type TProps = IOwnProps & IStoreProps & IDispatchProps;
 
-const Matrix: React.FC<TProps> = props => {
+function implementsInterface<I>(obj: any): obj is I {
+  const mI = obj as I;
+  for (let k in Object.keys(mI)) {
+    //@ts-ignore
+    if (mI[k] === undefined) return false;
+  }
+  return true;
+}
+
+function onBlur(
+  event: React.MouseEvent<HTMLButtonElement>,
+  data: Link[],
+  action: IDispatchProps["appendLinks"]
+): void;
+function onBlur(
+  event: React.FocusEvent<HTMLInputElement>,
+  data: GraphNode[],
+  action: IDispatchProps["appendNodes"]
+): void;
+function onBlur(
+  event:
+    | React.FocusEvent<HTMLInputElement>
+    | React.MouseEvent<HTMLButtonElement>,
+  data: GraphNode[] | Link[],
+  action: IDispatchProps[keyof IDispatchProps]
+): void {
+  if (implementsInterface<IDispatchProps["appendLinks"]>(action)) {
+    return action(data.length);
+  }
+  if (event.target instanceof HTMLInputElement) {
+    let { value } = event.target;
+    if (!value) return;
+    if (implementsInterface<GraphNode[]>(data)) {
+      return action(data.length, {
+        id: data[data.length - 1].id + 1,
+        label: value
+      });
+    }
+  }
+}
+
+export const Matrix: React.FC<TProps> = props => {
   console.log(
     `Matrix (${props.type})`,
     new Date(Date.now()).toLocaleTimeString()
   );
-  let table: any = null;
+  let table: JSX.Element;
+  let columnInput: JSX.Element | null = null;
   if (props.type === "Adjacency") {
     table = (
       <table className="matrix-table">
@@ -31,11 +72,6 @@ const Matrix: React.FC<TProps> = props => {
             {props.nodes.map(node => (
               <th key={`head_${node.id}`}>{node.id}</th>
             ))}
-            <input
-              type="text"
-              placeholder="+"
-              onBlur={() => props.appendLinks(props.links.length)}
-            />
           </tr>
         </thead>
         <tbody>
@@ -65,24 +101,12 @@ const Matrix: React.FC<TProps> = props => {
               </tr>
             );
           })}
-          <tr>
-            <input
-              type="text"
-              placeholder="+"
-              onBlur={e =>
-                props.appendNodes(props.nodes.length, {
-                  id: props.nodes[props.nodes.length - 1].id + 1,
-                  label: e.target.value
-                })
-              }
-            />
-          </tr>
         </tbody>
       </table>
     );
   }
   // if (props.type === 'Incidence')
-  else
+  else {
     table = (
       <table className="matrix-table">
         <thead>
@@ -91,16 +115,6 @@ const Matrix: React.FC<TProps> = props => {
             {props.links.map(link => (
               <th key={`head_${link.label}`}>{link.label}</th>
             ))}
-            <input
-              type="text"
-              placeholder="+"
-              onBlur={e =>
-                props.appendNodes(props.nodes.length, {
-                  id: props.nodes[props.nodes.length - 1].id + 1,
-                  label: e.target.value
-                })
-              }
-            />
           </tr>
         </thead>
         <tbody>
@@ -122,23 +136,29 @@ const Matrix: React.FC<TProps> = props => {
               </tr>
             );
           })}
-          <input
-            type="text"
-            placeholder="+"
-            onBlur={e =>
-              props.appendNodes(props.nodes.length, {
-                id: props.nodes[props.nodes.length - 1].id + 1,
-                label: e.target.value
-              })
-            }
-          />
         </tbody>
       </table>
     );
+    columnInput = (
+      <button onClick={e => onBlur(e, props.links, props.appendLinks)}>
+        +
+      </button>
+    );
+  }
   return (
-    <div className="Matrix">
-      <h2 className="Matrix-header">{`${props.type} matrix`}</h2>
-      {table}
+    <div className="matrix">
+      <h2 className="matrix-header">{`${props.type} matrix`}</h2>
+      <div className="matrix-content">
+        <div className="matrix-wrapper">
+          {table}
+          {columnInput}
+        </div>
+        <input
+          type="text"
+          placeholder="+"
+          onBlur={e => onBlur(e, props.nodes, props.appendNodes)}
+        />
+      </div>
     </div>
   );
 };
@@ -179,8 +199,8 @@ const mapD2P: MapDispatchToProps<IDispatchProps, IOwnProps> = (
         index,
         link: {
           label: `e${index}`,
-          source: "source",
-          target: "target",
+          source: { id: 0 },
+          target: { id: 1 },
           twoWay: false
         }
       })
@@ -192,4 +212,3 @@ export default connect(
   mapS2P,
   mapD2P
 )(Matrix);
-export { Matrix };
