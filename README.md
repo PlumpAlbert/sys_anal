@@ -1,5 +1,12 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+# TO-DO
+## - Лабораторная работа № 1
+  - [ ] Добавление узлов с помощью таблиц;
+  - [ ] Добавление связей между узлами с помощью таблиц;
+## -  Лабораторная работа №2
+  - [ ] Выделение иерархических уровней
+
 ## Available Scripts
 
 In the project directory, you can run:
