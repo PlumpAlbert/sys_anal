@@ -8,15 +8,21 @@ class App extends Component {
   render() {
     return (
       <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-        </header>
-        <div className="app-wrapper">
+        <div className="wrapper">
+          <header className="App-header">
+            <span>
+              Powered by{" "}
+              <b>
+                React<sup>&trade;</sup>
+              </b>
+            </span>
+            <img src={logo} className="App-logo" alt="logo" />
+          </header>
           <Graph />
-          <div className="wrapper">
-            <Matrix type="Incidence" />
-            <Matrix type="Adjacency" />
-          </div>
+        </div>
+        <div className="wrapper">
+          <Matrix type="Incidence" />
+          <Matrix type="Adjacency" />
         </div>
       </div>
     );
