@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { Provider } from "react-redux";
-import { createStore } from "redux";
+import { createStore, compose } from "redux";
 import "./index.css";
 import App from "./controllers/App";
 import { mainReducer } from "./store";
@@ -9,9 +9,7 @@ import { mainReducer } from "./store";
 
 const store = createStore(
   mainReducer,
-  (window as any).__REDUX_DEVTOOLS_EXTENSION__
-    ? (window as any).__REDUX_DEVTOOLS_EXTENSION__()
-    : null
+  (window as any).__REDUX_DEVTOOLS_EXTENSION__ || compose
 );
 ReactDOM.render(
   <Provider store={store}>
