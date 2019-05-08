@@ -149,63 +149,7 @@ export class Graph extends React.Component<IProps, IState> {
       )
       .force("collide", d3.forceCollide(circleRadius + 2))
       .alphaTarget(0.1)
-      .on("tick", () => {
-        if (!this.d3state) return console.error("> d3state is not defined!");
-        let { linkSelection, nodeSelection } = this.d3state;
-
-        linkSelection
-          .attr("d", d => {
-            let srcNode = d.source as GraphNode;
-            let destNode = d.target as GraphNode;
-            if (!destNode.x || !destNode.y || !srcNode.x || !srcNode.y) {
-              console.error("src", srcNode, "dest", destNode);
-              return 0;
-            } else if (srcNode !== destNode) {
-              let angle = Math.atan2(
-                destNode.y - srcNode.y,
-                destNode.x - srcNode.x
-              );
-              let startX = srcNode.x,
-                startY = srcNode.y;
-              if (d.twoWay) {
-                startX += (circleRadius + 10) * Math.cos(angle);
-                startY += (circleRadius + 10) * Math.sin(angle);
-              }
-              return `M${startX},${startY}
-               L${destNode.x -
-                 (circleRadius + 10) * Math.cos(angle)},${destNode.y -
-                (circleRadius + 10) * Math.sin(angle)}`;
-            } else {
-              return `M${srcNode.x},${srcNode.y} 
-              A ${circleRadius} ${circleRadius} 0 1 1 ${srcNode.x +
-                circleRadius} ${srcNode.y}Z`;
-            }
-          })
-          .attr("marker-start", d => (d.twoWay ? "url(#start-arrow)" : "none"));
-
-        if (this.startNode && this.startNode.x && this.startNode.y) {
-          userLink
-            .attr("x1", this.startNode.x + circleRadius)
-            .attr("y1", this.startNode.y + circleRadius);
-
-          if (userLink.attr("x2") === "0" && userLink.attr("y2") === "0") {
-            userLink
-              .attr("x2", this.startNode.x + circleRadius)
-              .attr("y2", this.startNode.y + circleRadius);
-          }
-        }
-        nodeSelection
-          .select("circle")
-          .attr("cx", d => {
-            return d.x ? d.x : null;
-          })
-          .attr("cy", d => (d.y ? d.y : null));
-
-        nodeSelection
-          .select("text")
-          .attr("x", d => (d.x ? d.x : null))
-          .attr("y", d => (d.y ? d.y + 2 : null));
-      });
+      .on("tick", this.onTick);
 
     let link = graph.append("g").attr("class", "links");
 
@@ -225,6 +169,67 @@ export class Graph extends React.Component<IProps, IState> {
       linkCount: this.props.links.length
     };
     this.updateGraph();
+  };
+
+  onTick = () => {
+    if (!this.d3state) return console.error("> d3state is not defined!");
+
+    this.d3state.linkSelection
+      .attr("d", d => {
+        let srcNode = d.source as GraphNode;
+        let destNode = d.target as GraphNode;
+        if (!destNode.x || !destNode.y || !srcNode.x || !srcNode.y) {
+          console.error("src", srcNode, "dest", destNode);
+          return 0;
+        } else if (srcNode !== destNode) {
+          let angle = Math.atan2(
+            destNode.y - srcNode.y,
+            destNode.x - srcNode.x
+          );
+          let startX = srcNode.x,
+            startY = srcNode.y;
+
+          if (d.twoWay) {
+            startX += (circleRadius + 10) * Math.cos(angle);
+            startY += (circleRadius + 10) * Math.sin(angle);
+          }
+          return `M${startX},${startY}
+           L${destNode.x - (circleRadius + 10) * Math.cos(angle)},${destNode.y -
+            (circleRadius + 10) * Math.sin(angle)}`;
+        } else {
+          return `M${srcNode.x},${srcNode.y} 
+          A ${circleRadius} ${circleRadius} 0 1 1 ${srcNode.x + circleRadius} ${
+            srcNode.y
+          }Z`;
+        }
+      })
+      .attr("marker-start", d => (d.twoWay ? "url(#start-arrow)" : "none"));
+
+    if (this.startNode && this.startNode.x && this.startNode.y) {
+      this.d3state.userLink
+        .attr("x1", this.startNode.x + circleRadius)
+        .attr("y1", this.startNode.y + circleRadius);
+
+      if (
+        this.d3state.userLink.attr("x2") === "0" &&
+        this.d3state.userLink.attr("y2") === "0"
+      ) {
+        this.d3state.userLink
+          .attr("x2", this.startNode.x + circleRadius)
+          .attr("y2", this.startNode.y + circleRadius);
+      }
+    }
+    this.d3state.nodeSelection
+      .select("circle")
+      .attr("cx", d => {
+        return d.x ? d.x : null;
+      })
+      .attr("cy", d => (d.y ? d.y : null));
+
+    this.d3state.nodeSelection
+      .select("text")
+      .attr("x", d => (d.x ? d.x : null))
+      .attr("y", d => (d.y ? d.y + 2 : null));
   };
 
   updateGraph = () => {
@@ -282,7 +287,6 @@ export class Graph extends React.Component<IProps, IState> {
             ) {
               createNewLink = false;
               this.props.setLink(i, { ...this.props.links[i], twoWay: true });
-              this.props.links[i].twoWay = true;
             }
           }
           if (createNewLink) {
@@ -304,6 +308,7 @@ export class Graph extends React.Component<IProps, IState> {
               .attr("x2", 0)
               .attr("y2", 0);
           }
+
           this.updateGraph();
         })
         .call(this.drag(force) as any);
@@ -327,28 +332,26 @@ export class Graph extends React.Component<IProps, IState> {
 
       nodeSelection = newSelection.merge(nodeSelection);
     }
-    if (linkSelection.size() !== links.length) {
-      // Update force for links
-      force.force(
+    // Draw new links and remove the old ones
+    linkSelection = linkSelection.data(links);
+    linkSelection.exit().remove();
+
+    linkSelection = linkSelection
+      .enter()
+      .append("path")
+      .merge(linkSelection);
+    // Update force for links
+    force
+      .force(
         "link",
         d3
           .forceLink<GraphNode, Link>(links)
           .distance(distance)
           .id(d => d.id.toString())
-      );
-
-      // Draw new links and remove the old ones
-      linkSelection = linkSelection.data(links);
-      linkSelection.exit().remove();
-
-      linkSelection = linkSelection
-        .enter()
-        .append("path")
-        .merge(linkSelection);
-    }
-
-    // Reset the force timer
-    force.alpha(1).restart();
+      )
+      .alpha(0.1)
+      .on("tick", this.onTick.bind(this))
+      .restart();
 
     this.d3state = {
       ...this.d3state,
@@ -387,7 +390,7 @@ export class Graph extends React.Component<IProps, IState> {
 
   render = () => {
     let { mode } = this.state;
-    console.log("Graph", new Date(Date.now()).toLocaleTimeString());
+    console.log("Rendering Graph", new Date(Date.now()).toLocaleTimeString());
     this.updateGraph();
     return (
       <div className="graph">
