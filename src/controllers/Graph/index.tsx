@@ -18,9 +18,9 @@ interface D3State {
   /** Link that used by user to add new links */
   userLink: d3.Selection<SVGLineElement, {}, HTMLElement, any>;
   /** Selection of all links on the screen */
-  linkSelection: d3.Selection<SVGPathElement, Link, SVGGElement, {}>;
+  linkGroupSelection: d3.Selection<SVGGElement, Link, SVGGElement, {}>;
   /** Selection of all nodes on the screen */
-  nodeSelection: d3.Selection<SVGGElement, GraphNode, SVGGElement, {}>;
+  nodeGroupSelection: d3.Selection<SVGGElement, GraphNode, SVGGElement, {}>;
   /** Force simulation for nodes and links */
   force: d3.Simulation<GraphNode, Link>;
   /** Width of the container */
@@ -44,6 +44,7 @@ interface IDispatchToProps {
 interface IProps extends IStateToProps, IDispatchToProps {}
 
 const circleRadius = 14;
+const fontSize = 14;
 
 export class Graph extends React.Component<IProps, IState> {
   d3state?: D3State;
@@ -110,7 +111,7 @@ export class Graph extends React.Component<IProps, IState> {
       .attr("fill", "crimson");
     let userLink = svg
       .append<SVGLineElement>("line")
-      .attr("class", "links hidden")
+      .attr("class", "link-path hidden")
       .attr("x1", 0)
       .attr("y1", 0)
       .attr("x2", 0)
@@ -153,16 +154,16 @@ export class Graph extends React.Component<IProps, IState> {
 
     let link = graph.append("g").attr("class", "links");
 
-    let linkSelection = link.selectAll<SVGPathElement, Link>("path");
+    let linkGroupSelection = link.selectAll<SVGGElement, Link>(".link");
 
     let node = graph.append("g").attr("class", "nodes");
 
-    let nodeSelection = node.selectAll<SVGGElement, GraphNode>(".node");
+    let nodeGroupSelection = node.selectAll<SVGGElement, GraphNode>(".node");
 
     this.d3state = {
       userLink,
-      linkSelection,
-      nodeSelection,
+      linkGroupSelection,
+      nodeGroupSelection,
       force,
       width,
       height,
@@ -174,7 +175,8 @@ export class Graph extends React.Component<IProps, IState> {
   onTick = () => {
     if (!this.d3state) return console.error("> d3state is not defined!");
 
-    this.d3state.linkSelection
+    this.d3state.linkGroupSelection
+      .selectAll<SVGPathElement, Link>("path")
       .attr("d", d => {
         let srcNode = d.source as GraphNode;
         let destNode = d.target as GraphNode;
@@ -205,6 +207,32 @@ export class Graph extends React.Component<IProps, IState> {
       })
       .attr("marker-start", d => (d.twoWay ? "url(#start-arrow)" : "none"));
 
+    this.d3state.linkGroupSelection
+      .selectAll<SVGTextElement, Link>("text")
+      .attr("x", d => {
+        let srcNode = d.source as GraphNode;
+        let destNode = d.target as GraphNode;
+        if (!destNode.x || !destNode.y || !srcNode.x || !srcNode.y) {
+          console.error("src", srcNode, "dest", destNode);
+          return 0;
+        }
+        let angle =
+          Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x) + 90;
+        return (srcNode.x + destNode.x) / 2 + Math.cos(angle) * fontSize;
+      })
+      .attr("y", d => {
+        let srcNode = d.source as GraphNode;
+        let destNode = d.target as GraphNode;
+        if (!destNode.x || !destNode.y || !srcNode.x || !srcNode.y) {
+          console.error("src", srcNode, "dest", destNode);
+          return 0;
+        }
+        let angle =
+          Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x) + 90;
+        return (srcNode.y + destNode.y) / 2 + Math.sin(angle) * fontSize;
+      })
+      .attr("style", `font-size: ${fontSize}px`);
+
     if (this.startNode && this.startNode.x && this.startNode.y) {
       this.d3state.userLink
         .attr("x1", this.startNode.x + circleRadius)
@@ -219,14 +247,14 @@ export class Graph extends React.Component<IProps, IState> {
           .attr("y2", this.startNode.y + circleRadius);
       }
     }
-    this.d3state.nodeSelection
+    this.d3state.nodeGroupSelection
       .select("circle")
       .attr("cx", d => {
         return d.x ? d.x : null;
       })
       .attr("cy", d => (d.y ? d.y : null));
 
-    this.d3state.nodeSelection
+    this.d3state.nodeGroupSelection
       .select("text")
       .attr("x", d => (d.x ? d.x : null))
       .attr("y", d => (d.y ? d.y + 2 : null));
@@ -235,31 +263,39 @@ export class Graph extends React.Component<IProps, IState> {
   updateGraph = () => {
     if (!this.d3state) return;
     let { nodes, links } = this.props;
-    let { linkSelection, nodeSelection, force, width, height } = this.d3state;
+    let {
+      linkGroupSelection,
+      nodeGroupSelection,
+      force,
+      width,
+      height
+    } = this.d3state;
 
-    if (!linkSelection) return console.error("> linkSelection is not defined!");
-    if (!nodeSelection) return console.error("> nodeSelection is not defined!");
+    if (!linkGroupSelection)
+      return console.error("> linkGroupSelection is not defined!");
+    if (!nodeGroupSelection)
+      return console.error("> nodeGroupSelection is not defined!");
     if (!force) return console.error("> force is not defined!");
 
     let distance = links.length * 2.5;
     distance = distance < 75 ? 75 : distance > 200 ? 200 : distance;
 
-    if (nodeSelection.size() !== nodes.length) {
+    if (nodeGroupSelection.size() !== nodes.length) {
       // Update force to apply on each node
       force.nodes(nodes);
       force
         .force("charge", d3.forceManyBody().strength(0))
         .force("center", d3.forceCenter(width / 2, height / 2));
 
-      nodeSelection = nodeSelection.data(nodes);
-      nodeSelection
+      nodeGroupSelection = nodeGroupSelection.data(nodes);
+      nodeGroupSelection
         .exit()
         .transition()
         .duration(250)
         .attr("fill", "none")
         .remove();
 
-      let newSelection = nodeSelection
+      let newSelection = nodeGroupSelection
         .enter()
         .append("g")
         .attr("class", "node");
@@ -268,7 +304,9 @@ export class Graph extends React.Component<IProps, IState> {
         .on("mousedown", d => {
           if (this.state.mode !== "modify") return;
           this.startNode = d;
-          this.d3state ? this.d3state.userLink.attr("class", "links") : null;
+          this.d3state
+            ? this.d3state.userLink.attr("class", "link-path")
+            : null;
         })
         .on("mouseup", d => {
           if (this.state.mode !== "modify" || !this.startNode) return;
@@ -330,16 +368,26 @@ export class Graph extends React.Component<IProps, IState> {
         .attr("x", d => (d.x ? d.x : null))
         .attr("y", d => (d.y ? d.y : null));
 
-      nodeSelection = newSelection.merge(nodeSelection);
+      nodeGroupSelection = newSelection.merge(nodeGroupSelection);
     }
     // Draw new links and remove the old ones
-    linkSelection = linkSelection.data(links);
-    linkSelection.exit().remove();
+    linkGroupSelection = linkGroupSelection.data(this.props.links);
+    linkGroupSelection.exit().remove();
 
-    linkSelection = linkSelection
-      .enter()
-      .append("path")
-      .merge(linkSelection);
+    let newLinkGroupSelection = linkGroupSelection.enter().append("g");
+    if (newLinkGroupSelection.size() > 0) {
+      // Append path for link
+      newLinkGroupSelection.append("path").attr("class", "link-path");
+      // Append text for link
+      newLinkGroupSelection
+        .append("text")
+        .text(d => d.label)
+        .attr("alignment-baseline", "middle")
+        .attr("class", "link-text");
+    }
+    linkGroupSelection.selectAll<SVGPathElement, Link>("path").data(d => [d]);
+    linkGroupSelection.selectAll<SVGTextElement, Link>("path").data(d => [d]);
+    linkGroupSelection = newLinkGroupSelection.merge(linkGroupSelection);
     // Update force for links
     force
       .force(
@@ -350,13 +398,12 @@ export class Graph extends React.Component<IProps, IState> {
           .id(d => d.id.toString())
       )
       .alpha(0.1)
-      .on("tick", this.onTick.bind(this))
       .restart();
 
     this.d3state = {
       ...this.d3state,
-      linkSelection,
-      nodeSelection
+      linkGroupSelection,
+      nodeGroupSelection
     };
   };
 
