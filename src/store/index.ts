@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { Reducer } from 'redux'
+import { Reducer } from "redux";
 import { createStandardAction } from "typesafe-actions";
 
 export interface GraphNode extends d3.SimulationNodeDatum {
@@ -19,18 +19,35 @@ export interface IGlobalState {
 
 enum ActionConst {
   updateNode = "@GLOBALSTATE/updateNode",
-  updateLink = "@GLOBALSTATE/updateLink"
+  appendLink = "@GLOBALSTATE/appendLink",
+  updateLink = "@GLOBALSTATE/updateLink",
+  removeLink = "@GLOBALSTATE/removeLink"
 }
 
+export const appendLink = createStandardAction(ActionConst.appendLink)<{
+  sourceNode: GraphNode;
+  targetNode: GraphNode;
+  twoWay?: boolean;
+  label?: string;
+}>();
 export const updateLink = createStandardAction(ActionConst.updateLink)<{
-  link: Link,
-  index: number
+  property: keyof Link;
+  newValue: any;
+  index: number;
 }>();
+export const removeLink = createStandardAction(ActionConst.removeLink)<{
+  index: number;
+}>();
+
 export const updateNode = createStandardAction(ActionConst.updateNode)<{
-  node: GraphNode,
-  index: number
+  node: GraphNode;
+  index: number;
 }>();
-type TActions = ReturnType<typeof updateLink> | ReturnType<typeof updateNode>;
+type TActions =
+  | ReturnType<typeof updateNode>
+  | ReturnType<typeof appendLink>
+  | ReturnType<typeof updateLink>
+  | ReturnType<typeof removeLink>;
 
 const initNodes: GraphNode[] = [
   { id: 0 },
@@ -46,28 +63,58 @@ const initNodes: GraphNode[] = [
   { id: 10 }
 ];
 const initLinks: Link[] = [
-  { source: initNodes[0], target: initNodes[1], twoWay: false, label: 'e0' },
-  { source: initNodes[2], target: initNodes[1], twoWay: true, label: 'e1' },
-  { source: initNodes[4], target: initNodes[0], twoWay: false, label: 'e2' },
-  { source: initNodes[2], target: initNodes[5], twoWay: false, label: 'e3' },
-  { source: initNodes[4], target: initNodes[6], twoWay: true, label: 'e4' },
-  { source: initNodes[3], target: initNodes[7], twoWay: false, label: 'e5' },
-  { source: initNodes[7], target: initNodes[5], twoWay: true, label: 'e6' }
+  { source: initNodes[0], target: initNodes[1], twoWay: false, label: "e0" },
+  { source: initNodes[2], target: initNodes[1], twoWay: true, label: "e1" },
+  { source: initNodes[4], target: initNodes[0], twoWay: false, label: "e2" },
+  { source: initNodes[2], target: initNodes[5], twoWay: false, label: "e3" },
+  { source: initNodes[4], target: initNodes[6], twoWay: true, label: "e4" },
+  { source: initNodes[3], target: initNodes[7], twoWay: false, label: "e5" },
+  { source: initNodes[7], target: initNodes[5], twoWay: true, label: "e6" }
 ];
 
-export const mainReducer: Reducer<IGlobalState, TActions> = (state = {
-  nodes: initNodes,
-  links: initLinks
-}, action) => {
+export const mainReducer: Reducer<IGlobalState, TActions> = (
+  state = {
+    nodes: initNodes,
+    links: initLinks
+  },
+  action
+) => {
   switch (action.type) {
     case ActionConst.updateNode: {
       let nodes = [...state.nodes];
       nodes.splice(action.payload.index, 1, action.payload.node);
       return { ...state, nodes };
     }
+    case ActionConst.appendLink: {
+      let links = [...state.links];
+      let { label, twoWay, sourceNode, targetNode } = action.payload;
+      let index = links.findIndex(
+        v => v.target === sourceNode && v.source === targetNode
+      );
+      if (index !== -1) {
+        links[index].twoWay = true;
+      } else {
+        let lastLink = links[links.length - 1];
+        index = lastLink.index ? lastLink.index + 1 : links.length;
+        links.push({
+          index,
+          label: label ? label : `e${index}`,
+          twoWay: twoWay ? twoWay : false,
+          source: sourceNode,
+          target: targetNode
+        });
+      }
+      return { ...state, links };
+    }
+    case ActionConst.removeLink: {
+      let links = [...state.links];
+      links.splice(action.payload.index);
+      return { ...state, links };
+    }
     case ActionConst.updateLink: {
       let links = [...state.links];
-      links.splice(action.payload.index, 1, action.payload.link);
+      let { property, newValue, index } = action.payload;
+      links[index][property] = newValue;
       return { ...state, links };
     }
   }
