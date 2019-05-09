@@ -217,7 +217,8 @@ export class Graph extends React.Component<IProps, IState> {
           return 0;
         }
         let angle =
-          Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x) + 90;
+          Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x) +
+          Math.PI / 2;
         return (srcNode.x + destNode.x) / 2 + Math.cos(angle) * fontSize;
       })
       .attr("y", d => {
@@ -228,7 +229,8 @@ export class Graph extends React.Component<IProps, IState> {
           return 0;
         }
         let angle =
-          Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x) + 90;
+          Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x) +
+          Math.PI / 2;
         return (srcNode.y + destNode.y) / 2 + Math.sin(angle) * fontSize;
       })
       .attr("style", `font-size: ${fontSize}px`);
