@@ -30,6 +30,8 @@
 .matrix-wrapper td,
 .matrix-wrapper th,
 .matrix-wrapper button {
+  cursor: pointer;
+  user-select: none;
   width: 2rem;
   min-height: 1.2rem;
   flex: 1;
