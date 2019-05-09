@@ -7,6 +7,15 @@ import App from "./controllers/App";
 import { mainReducer } from "./store";
 // import * as serviceWorker from './serviceWorker';
 
+export function implementsInterface<I>(obj: any): obj is I {
+  const mI = obj as I;
+  for (let k in Object.keys(mI)) {
+    //@ts-ignore
+    if (mI[k] === undefined) return false;
+  }
+  return true;
+}
+
 const store = createStore(
   mainReducer,
   (window as any).__REDUX_DEVTOOLS_EXTENSION__

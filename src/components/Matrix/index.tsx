@@ -15,15 +15,6 @@ interface IOwnProps {
 
 export type TProps = IOwnProps & IStoreProps & IDispatchProps;
 
-function implementsInterface<I>(obj: any): obj is I {
-  const mI = obj as I;
-  for (let k in Object.keys(mI)) {
-    //@ts-ignore
-    if (mI[k] === undefined) return false;
-  }
-  return true;
-}
-
 function onBlur(
   event: React.MouseEvent<HTMLButtonElement>,
   data: Link[],
