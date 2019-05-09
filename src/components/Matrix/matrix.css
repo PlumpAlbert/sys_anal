@@ -16,6 +16,12 @@
   border-top: 2px solid hsl(200, 50%, 60%);
   color: hsl(200, 90%, 70%);
 }
+.matrix-content input::placeholder {
+  color: hsl(200, 90%, 70%);
+}
+.matrix-content input:focus {
+  outline: none;
+}
 
 .matrix-wrapper {
   display: flex;
@@ -23,10 +29,16 @@
 }
 .matrix-wrapper td,
 .matrix-wrapper th,
-.matrix-wrapper input {
+.matrix-wrapper button {
   width: 2rem;
   min-height: 1.2rem;
   flex: 1;
+}
+.matrix-wrapper button {
+  background: transparent;
+  border: none;
+  font-weight: 700;
+  color: hsl(200, 90%, 70%);
 }
 
 .matrix-table {

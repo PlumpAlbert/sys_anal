@@ -209,7 +209,7 @@ export class Graph extends React.Component<IProps, IState> {
 
     this.d3state.linkGroupSelection
       .selectAll<SVGTextElement, Link>("text")
-      .attr("x", d => {
+      .attr("transform", d => {
         let srcNode = d.source as GraphNode;
         let destNode = d.target as GraphNode;
         if (!destNode.x || !destNode.y || !srcNode.x || !srcNode.y) {
@@ -219,19 +219,12 @@ export class Graph extends React.Component<IProps, IState> {
         let angle =
           Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x) +
           Math.PI / 2;
-        return (srcNode.x + destNode.x) / 2 + Math.cos(angle) * fontSize;
-      })
-      .attr("y", d => {
-        let srcNode = d.source as GraphNode;
-        let destNode = d.target as GraphNode;
-        if (!destNode.x || !destNode.y || !srcNode.x || !srcNode.y) {
-          console.error("src", srcNode, "dest", destNode);
-          return 0;
-        }
-        let angle =
-          Math.atan2(destNode.y - srcNode.y, destNode.x - srcNode.x) +
-          Math.PI / 2;
-        return (srcNode.y + destNode.y) / 2 + Math.sin(angle) * fontSize;
+        if (angle > Math.PI) angle -= Math.PI;
+        let x = (srcNode.x + destNode.x) / 2 + Math.cos(angle) * fontSize;
+        let y = (srcNode.y + destNode.y) / 2 + Math.sin(angle) * fontSize;
+
+        return `rotate(${(angle * 180) /
+          Math.PI} ${x} ${y}) translate(${x} ${y})`;
       })
       .attr("style", `font-size: ${fontSize}px`);
 
