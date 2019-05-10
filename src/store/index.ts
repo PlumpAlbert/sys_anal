@@ -35,7 +35,11 @@ export const updateLink = createStandardAction(ActionConst.updateLink)<{
   newValue: any;
   index: number;
 }>();
-export const removeLink = createStandardAction(ActionConst.removeLink)<number>();
+export const removeLink = createStandardAction(ActionConst.removeLink)<{
+  index: number;
+  sourceNode: GraphNode;
+  targetNode: GraphNode;
+}>();
 
 export const updateNode = createStandardAction(ActionConst.updateNode)<{
   node: GraphNode;
@@ -48,26 +52,26 @@ type TActions =
   | ReturnType<typeof removeLink>;
 
 const initNodes: GraphNode[] = [
-  {id: 0},
-  {id: 1},
-  {id: 2},
-  {id: 3},
-  {id: 4},
-  {id: 5},
-  {id: 6},
-  {id: 7},
-  {id: 8},
-  {id: 9},
-  {id: 10}
+  { id: 0 },
+  { id: 1 },
+  { id: 2 },
+  { id: 3 },
+  { id: 4 },
+  { id: 5 },
+  { id: 6 },
+  { id: 7 },
+  { id: 8 },
+  { id: 9 },
+  { id: 10 }
 ];
 const initLinks: Link[] = [
-  {source: initNodes[0], target: initNodes[1], twoWay: false, label: "e0"},
-  {source: initNodes[2], target: initNodes[1], twoWay: true, label: "e1"},
-  {source: initNodes[4], target: initNodes[0], twoWay: false, label: "e2"},
-  {source: initNodes[2], target: initNodes[5], twoWay: false, label: "e3"},
-  {source: initNodes[4], target: initNodes[6], twoWay: true, label: "e4"},
-  {source: initNodes[3], target: initNodes[7], twoWay: false, label: "e5"},
-  {source: initNodes[7], target: initNodes[5], twoWay: true, label: "e6"}
+  { source: initNodes[0], target: initNodes[1], twoWay: false, label: "e0" },
+  { source: initNodes[2], target: initNodes[1], twoWay: true, label: "e1" },
+  { source: initNodes[4], target: initNodes[0], twoWay: false, label: "e2" },
+  { source: initNodes[2], target: initNodes[5], twoWay: false, label: "e3" },
+  { source: initNodes[4], target: initNodes[6], twoWay: true, label: "e4" },
+  { source: initNodes[3], target: initNodes[7], twoWay: false, label: "e5" },
+  { source: initNodes[7], target: initNodes[5], twoWay: true, label: "e6" }
 ];
 
 export const mainReducer: Reducer<IGlobalState, TActions> = (
@@ -81,11 +85,11 @@ export const mainReducer: Reducer<IGlobalState, TActions> = (
     case ActionConst.updateNode: {
       let nodes = [...state.nodes];
       nodes.splice(action.payload.index, 1, action.payload.node);
-      return {...state, nodes};
+      return { ...state, nodes };
     }
     case ActionConst.appendLink: {
       let links = [...state.links];
-      let {label, twoWay, sourceNode, targetNode} = action.payload;
+      let { label, twoWay, sourceNode, targetNode } = action.payload;
       let index = links.findIndex(
         v => v.target === sourceNode && v.source === targetNode
       );
@@ -102,18 +106,26 @@ export const mainReducer: Reducer<IGlobalState, TActions> = (
           target: targetNode
         });
       }
-      return {...state, links};
+      return { ...state, links };
     }
     case ActionConst.removeLink: {
+      let { index, sourceNode, targetNode } = action.payload;
       let links = [...state.links];
-      links.splice(action.payload);
-      return {...state, links};
+      console.log(`Removing link #${index}`, links[index]);
+      if (links[index].twoWay) {
+        if (links[index].source === sourceNode) {
+          links[index].source = targetNode;
+          links[index].target = sourceNode;
+        }
+        links[index].twoWay = false;
+      } else links.splice(index);
+      return { ...state, links };
     }
     case ActionConst.updateLink: {
       let links = [...state.links];
-      let {property, newValue, index} = action.payload;
+      let { property, newValue, index } = action.payload;
       links[index][property] = newValue;
-      return {...state, links};
+      return { ...state, links };
     }
   }
   return state;
