@@ -316,7 +316,7 @@ export class Graph extends React.Component<IProps, IState> {
             ) {
               // Make it twoWay
               createNewLink = false;
-              this.props.updateLink(i, "twoWay", true);
+              this.props.updateLink(i, { twoWay: true });
             }
           }
           // If there's no link - create it
@@ -481,7 +481,7 @@ interface IDispatchToProps {
     twoWay?: boolean,
     label?: string
   ) => void;
-  updateLink: (index: number, property: keyof Link, newValue: any) => void;
+  updateLink: (index: number, changes: { [p in keyof Link]?: Link[p] }) => void;
   removeLink: (
     index: number,
     sourceNode: GraphNode,
@@ -493,8 +493,7 @@ const dispatchToProps: MapDispatchToProps<IDispatchToProps, {}> = dispatch => ({
   setNode: (index, node) => dispatch(updateNode({ index, node })),
   appendLink: (sourceNode, targetNode, twoWay, label) =>
     dispatch(appendLink({ sourceNode, targetNode, twoWay, label })),
-  updateLink: (index, property, newValue) =>
-    dispatch(updateLink({ index, property, newValue })),
+  updateLink: (index, changes) => dispatch(updateLink({ index, changes })),
   removeLink: (index, sourceNode, targetNode) =>
     dispatch(removeLink({ index, sourceNode, targetNode }))
 });

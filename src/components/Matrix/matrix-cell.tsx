@@ -82,7 +82,7 @@ interface IDispatchProps {
     twoWay?: boolean,
     label?: string
   ) => void;
-  updateLink: (index: number, property: keyof Link, newValue: any) => void;
+  updateLink: (index: number, changes: { [p in keyof Link]?: Link[p] }) => void;
   removeLink: (
     index: number,
     sourceNode: GraphNode,
@@ -96,8 +96,7 @@ const mapD2P: MapDispatchToProps<
 > = (dispatch, ownProps) => ({
   appendLink: (sourceNode, targetNode, twoWay, label) =>
     dispatch(appendLink({ sourceNode, targetNode, twoWay, label })),
-  updateLink: (index, property, newValue) =>
-    dispatch(updateLink({ index, property, newValue })),
+  updateLink: (index, changes) => dispatch(updateLink({ index, changes })),
   removeLink: (index, sourceNode, targetNode) =>
     dispatch(removeLink({ index, sourceNode, targetNode })),
   ...ownProps

@@ -31,9 +31,8 @@ export const appendLink = createStandardAction(ActionConst.appendLink)<{
   label?: string;
 }>();
 export const updateLink = createStandardAction(ActionConst.updateLink)<{
-  property: keyof Link;
-  newValue: any;
   index: number;
+  changes: { [p in keyof Link]?: Link[p] };
 }>();
 export const removeLink = createStandardAction(ActionConst.removeLink)<{
   index: number;
@@ -111,7 +110,6 @@ export const mainReducer: Reducer<IGlobalState, TActions> = (
     case ActionConst.removeLink: {
       let { index, sourceNode, targetNode } = action.payload;
       let links = [...state.links];
-      console.log(`Removing link #${index}`, links[index]);
       if (links[index].twoWay) {
         if (links[index].source === sourceNode) {
           links[index].source = targetNode;
@@ -123,8 +121,11 @@ export const mainReducer: Reducer<IGlobalState, TActions> = (
     }
     case ActionConst.updateLink: {
       let links = [...state.links];
-      let { property, newValue, index } = action.payload;
-      links[index][property] = newValue;
+      let { changes, index } = action.payload;
+      for (let key in changes) {
+        //@ts-ignore
+        links[index][key] = changes[key];
+      }
       return { ...state, links };
     }
   }
