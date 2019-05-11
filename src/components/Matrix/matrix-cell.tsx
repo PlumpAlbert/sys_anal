@@ -17,8 +17,8 @@ interface AdjacencyProps {
 }
 
 interface IncidenceProps {
-  nodeId: number;
-  linkId: number;
+  // node: GraphNode;
+  // link: Link;
   initialValue: number;
 }
 
@@ -59,18 +59,48 @@ export class MatrixCell extends React.PureComponent<TProps, IState> {
    * TODO create implementation
    * @param event
    */
-  incidenceClick = (event: React.MouseEvent<HTMLTableDataCellElement>) => {
-    let { value } = this.state;
-    let newValue = 0;
-    if (value === 0) newValue = 1;
-    else if (value === 1) newValue = -1;
-    this.setState({ value: newValue });
-  };
+  // incidenceClick = (event: React.MouseEvent<HTMLTableDataCellElement>) => {
+  //   let { value } = this.state;
+  //   let newValue = 0;
+  //   switch (value) {
+  //     case -1:
+  //       newValue = 0;
+  //       break;
+  //     case 0:
+  //       newValue = 1;
+  //       break;
+  //     case 1:
+  //       newValue = -1;
+  //       break;
+  //     default:
+  //       break;
+  //   }
+  //   if (!isAdjacencyProps(this.props)) {
+  //     let { link, node, appendLink, removeLink, updateLink } = this.props;
+  //     if (!link.index) return;
+  //     switch (newValue) {
+  //       case -1: {
+  //         updateLink(link.index, {
+  //           source: link.target,
+  //           target: link.source,
+  //           twoWay: false
+  //         });
+  //         break;
+  //       }
+  //       case 1: {
+  //         if (link.target === node) {
+  //           updateLink(link.index, { twoWay: true });
+  //         }
+  //       }
+  //     }
+  //   }
+  //   this.setState({ value: newValue });
+  // };
   render() {
     if (isAdjacencyProps(this.props)) {
       return <td onClick={this.adjacencyClick}>{this.state.value}</td>;
     } else {
-      return <td onClick={this.incidenceClick}>{this.state.value}</td>;
+      return <td>{this.state.value}</td>;
     }
   }
 }
