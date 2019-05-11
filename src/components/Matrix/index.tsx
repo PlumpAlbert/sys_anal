@@ -38,7 +38,7 @@ function onBlur(
     return action(data.length);
   }
   if (event.target instanceof HTMLInputElement) {
-    let {value} = event.target;
+    let { value } = event.target;
     if (!value) return;
     if (implementsInterface<GraphNode[]>(data)) {
       return action(data.length, {
@@ -60,29 +60,36 @@ export const Matrix: React.FC<TProps> = props => {
     table = (
       <table className="matrix-table">
         <thead>
-        <tr>
-          <th/>
-          {props.nodes.map(node => (
-            <th key={`head_${node.id}`}>{node.id}</th>
-          ))}
-        </tr>
+          <tr>
+            <th />
+            {props.nodes.map(node => (
+              <th key={`head_${node.id}`}>{node.id}</th>
+            ))}
+          </tr>
         </thead>
         <tbody>
-        {props.nodes.map(sourceNode => (
-          <tr key={`adj-${sourceNode.id}`}>
-            <th>{sourceNode.label ? sourceNode.label : sourceNode.id}</th>
-            {props.nodes.map(targetNode => {
-              let link = props.links.find(v => (v.source === sourceNode && v.target === targetNode)
-                || (v.source === targetNode && v.target === sourceNode && v.twoWay));
-              return (
-                <MatrixCell key={`adj-${sourceNode.id}-${targetNode.id}`}
-                            linkId={link ? link.index : undefined}
-                            initialValue={link ? 1 : 0}
-                            {...{sourceNode, targetNode}}/>
-              )
-            })}
-          </tr>
-        ))}
+          {props.nodes.map(sourceNode => (
+            <tr key={`adj-${sourceNode.id}`}>
+              <th>{sourceNode.label ? sourceNode.label : sourceNode.id}</th>
+              {props.nodes.map(targetNode => {
+                let link = props.links.find(
+                  v =>
+                    (v.source === sourceNode && v.target === targetNode) ||
+                    (v.source === targetNode &&
+                      v.target === sourceNode &&
+                      v.twoWay)
+                );
+                return (
+                  <MatrixCell
+                    key={`adj-${sourceNode.id}-${targetNode.id}`}
+                    linkId={link ? link.index : undefined}
+                    initialValue={link ? 1 : 0}
+                    {...{ sourceNode, targetNode }}
+                  />
+                );
+              })}
+            </tr>
+          ))}
         </tbody>
       </table>
     );
@@ -92,32 +99,32 @@ export const Matrix: React.FC<TProps> = props => {
     table = (
       <table className="matrix-table">
         <thead>
-        <tr>
-          <th/>
-          {props.links.map(link => (
-            <th key={`head_${link.label}`}>{link.label}</th>
-          ))}
-        </tr>
+          <tr>
+            <th />
+            {props.links.map(link => (
+              <th key={`head_${link.label}`}>{link.label}</th>
+            ))}
+          </tr>
         </thead>
         <tbody>
-        {props.nodes.map(node => {
-          let content = props.links.map(link => {
-            if (link.source === node) return 1;
-            else if (link.target === node) {
-              if (link.twoWay) return 1;
-              return -1;
-            }
-            return 0;
-          });
-          return (
-            <tr key={`row_${node.id}`}>
-              <th>{node.id}</th>
-              {content.map((v, i) => (
-                <td key={`${node.id}_${i}`}>{v}</td>
-              ))}
-            </tr>
-          );
-        })}
+          {props.nodes.map(node => {
+            let content = props.links.map(link => {
+              if (link.source === node) return 1;
+              else if (link.target === node) {
+                if (link.twoWay) return 1;
+                return -1;
+              }
+              return 0;
+            });
+            return (
+              <tr key={`row_${node.id}`}>
+                <th>{node.id}</th>
+                {content.map((v, i) => (
+                  <MatrixCell key={`${node.id}_${i}`} initialValue={v} />
+                ))}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     );
@@ -151,7 +158,7 @@ interface IStoreProps {
 }
 
 const mapS2P: MapStateToProps<IStoreProps, IOwnProps, IGlobalState> = (
-  {nodes, links},
+  { nodes, links },
   ownprops
 ) => ({
   nodes,
@@ -166,7 +173,7 @@ interface IDispatchProps {
 
 const mapD2P: MapDispatchToProps<IDispatchProps, IOwnProps> = (
   dispatch,
-  {type}
+  { type }
 ) => ({
   appendNodes: (index, node) =>
     dispatch(
@@ -178,8 +185,8 @@ const mapD2P: MapDispatchToProps<IDispatchProps, IOwnProps> = (
   appendLinks: index =>
     dispatch(
       appendLink({
-        sourceNode: {id: 0},
-        targetNode: {id: 1},
+        sourceNode: { id: 0 },
+        targetNode: { id: 1 },
         twoWay: false
       })
     ),
