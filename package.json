@@ -13,7 +13,9 @@
   "dependencies": {
     "d3": "^5.9.2",
     "react": "^16.8.5",
-    "react-dom": "^16.8.5"
+    "react-dom": "^16.8.5",
+    "redux": "^4.0.1",
+    "react-redux": "^7.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -41,10 +43,8 @@
     "@types/redux": "^3.6.0",
     "enzyme": "^3.9.0",
     "enzyme-adapter-react-16": "^1.12.1",
-    "react-redux": "^7.0.1",
     "react-scripts": "2.1.8",
     "react-test-renderer": "^16.8.6",
-    "redux": "^4.0.1",
     "typesafe-actions": "^4.0.0",
     "typescript": "3.3.4000"
   }
