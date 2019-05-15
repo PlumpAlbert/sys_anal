@@ -34,33 +34,7 @@ describe("Testing logic for Graph Levels", () => {
     expect(currentLevel).toEqual([1, 3]);
   });
 
-  it("Should group nodes by levels", () => {
-    /**
-     * The array which represents the graph levels
-     */
-    let levels: Array<number[]> = [];
-    while (links.length > 1) {
-      let leftovers: typeof links = Object.create(links);
-      let curLevel: number[] = [];
-      links.forEach((link, linkIndex) => {
-        if (curLevel.includes(link.start)) {
-          leftovers.splice(linkIndex - (links.length - leftovers.length), 1);
-          return;
-        }
-        let match = links.findIndex(v => v.end === link.start);
-        if (match !== -1) return;
-        curLevel.push(link.start);
-        if (leftovers.length === 1) return;
-        leftovers.splice(linkIndex - (links.length - leftovers.length), 1);
-      });
-      levels.push(curLevel);
-      if (leftovers.length === 1) levels.push([leftovers[0].end]);
-      links = leftovers;
-    }
-    expect(levels).toEqual([[1, 3], [2], [4]]);
-  });
-
-  fit("Should create ебучие уровни", () => {
+  it("Should group links by levels", () => {
     let levels: Array<number[]> = [[]];
     while (links.length) {
       // Массив с "необработанными" соединениями
