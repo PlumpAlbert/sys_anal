@@ -1,0 +1,22 @@
+.level-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.level-tree .level {
+  display: flex;
+  justify-content: space-between;
+}
+
+.level-tree .level span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 100%;
+  border: 2px solid hsl(0, 0%, 80%);
+  color: hsl(0, 0%, 100%);
+  background: hsl(0, 0%, 50%);
+}
